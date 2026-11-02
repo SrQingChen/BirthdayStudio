@@ -1,0 +1,61 @@
+{
+  "name": "毛玻璃庆典",
+  "description": "暖光暖色的夜间庆典：深酒红背景、玻璃卡片、奶油蛋糕。",
+  "meta": {
+    "theme": "glass-celebration",
+    "author": "SrQingChen"
+  },
+  "global": {
+    "environment": { "mode": "dark", "ambient_brightness": 1.0 },
+    "audio": { "master_volume_pct": 48, "bgm": { "path": "audio/bgm_celebration.wav", "volume_pct": 48 } }
+  },
+  "acts": {
+    "intro": {
+      "hint": "轻触信封，开启今晚的祝福",
+      "hint_size": 22,
+      "envelope": {
+        "paper_color": "#f4e8d8",
+        "flap_color": "#eadcc8",
+        "seal_color": "#b3393f",
+        "seal_highlight": "#d9575c",
+        "ribbon_color": "#e9c46a",
+        "thread_color": "#7a2a2f"
+      }
+    },
+    "wax": {
+      "letter": {
+        "paper_color": "#f8f0e1",
+        "ink_color": "#3a2e28",
+        "accent_color": "#b0563a",
+        "font_family": "hanSerif",
+        "font_size_px": 21,
+        "line_height": 1.8
+      }
+    },
+    "popups": {
+      "style": "glass",
+      "color_strategy": {
+        "mode": "harmony",
+        "harmony": "analogous",
+        "base_hue": 14,
+        "saturation_bucket": [0.46, 0.68],
+        "lightness_bucket": [0.64, 0.78]
+      }
+    },
+    "confirm": { "style": "glass" },
+    "cake": {
+      "cake": {
+        "layers": [
+          { "radius": 200, "height": 92, "color": "#f6d3c3", "frosting": "#fff4ec" },
+          { "radius": 152, "height": 80, "color": "#f3b7a6", "frosting": "#ffe9df" },
+          { "radius": 106, "height": 70, "color": "#ef9d8c", "frosting": "#fff0e8" }
+        ],
+        "plate_color": "#e9e2d6"
+      },
+      "candles": { "colors": ["#f2a7b8", "#f7c873", "#9ed0c4", "#b3a6e8", "#f09a7a"] }
+    },
+    "finale": {
+      "confetti": { "colors": ["#ff8fab", "#ffd166", "#8ecae6", "#b8e0d2", "#cdb4db"] }
+    }
+  }
+}

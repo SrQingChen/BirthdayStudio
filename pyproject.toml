@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "birthday-studio"
+version = "1.0.0"
+description = "配置驱动的交互式生贺演出终端：七幕仪式演出引擎 + 可视化配置编辑器"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "GPL-3.0-or-later" }
+authors = [{ name = "SrQingChen" }]
+keywords = ["birthday", "pyside6", "qml", "qtquick3d", "video-terminal"]
+dependencies = [
+    "PySide6>=6.6",
+    "pydantic>=2.6",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.5"]
+build = ["nuitka>=2.4", "pyinstaller>=6.6"]
+
+[project.scripts]
+birthday-studio = "app.main:main"
+
+[tool.setuptools]
+packages = ["app", "app.config", "app.core", "app.backend"]
+
+[tool.setuptools.package-data]
+app = ["qml/**/*.qml", "qml/**/*.js"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

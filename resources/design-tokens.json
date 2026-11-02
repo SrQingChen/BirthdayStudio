@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "shape": {
+    "xs": 4,
+    "s": 8,
+    "m": 12,
+    "l": 16,
+    "xl": 28,
+    "full": 9999,
+    "nestingRule": "inner = outer - padding"
+  },
+  "glass": {
+    "blurPx": [16, 24, 30],
+    "tintAlpha": [0.10, 0.28],
+    "thinTintAlpha": 0.28,
+    "borderAlpha": [0.30, 0.50],
+    "borderPx": [1, 2],
+    "noiseOpacity": 0.02,
+    "innerHighlight": "top white 20%",
+    "innerShadow": "bottom black 20%",
+    "maxStack": 2,
+    "fallback": "opaque+border"
+  },
+  "elevation": {
+    "card": { "blur": 4, "y": 2, "alpha": 0.14 },
+    "flyout": { "blur": 16, "y": 8, "alpha": 0.20 },
+    "dialog": { "blur": 64, "y": 32, "alpha": 0.24 },
+    "pressRule": 0.6
+  },
+  "motion": {
+    "durations": { "instant": 83, "fast": 150, "normal": 250, "enter": 300, "scene": 500 },
+    "limits": { "feedbackStartMax": 100, "uiCeiling": 300, "sceneMax": 600 },
+    "press": { "downScale": 0.96, "downMs": [100, 160], "upSpring": { "spring": 4.0, "damping": 0.5 } },
+    "stagger": { "defaultMs": [40, 80], "letterMs": [30, 60] },
+    "easing": {
+      "enter": [0, 0, 0, 1],
+      "exit": [1, 0, 1, 1],
+      "emphasizedDecelerate": [0.05, 0.7, 0.1, 1],
+      "emphasizedAccelerate": [0.3, 0, 0.8, 0.15]
+    },
+    "reducedMotionFallback": "opacity-dissolve"
+  },
+  "type": {
+    "bodyStageMin": 20,
+    "bodyCardMin": 16,
+    "display": [28, 34],
+    "lineHeight": [1.4, 1.6],
+    "chineseLineLengthMax": 35,
+    "weights": { "body": 400, "heading": 500 },
+    "stack": {
+      "han": ["Noto Sans SC", "Source Han Sans SC", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC"],
+      "hanSerif": ["Noto Serif SC", "Source Han Serif SC", "Songti SC", "SimSun", "Microsoft YaHei"],
+      "latin": ["IBM Plex Sans", "Segoe UI", "Arial"]
+    }
+  },
+  "targets": {
+    "primary": [44, 44],
+    "min": [24, 24],
+    "waxSealHit": 96
+  },
+  "contrast": { "text": 4.5, "largeText": 3.0, "uiComponent": 3.0, "focusRing": 3.0 },
+  "focus": { "ringWidthPx": 2, "style": "outline+2px offset" },
+  "color": {
+    "roles": [
+      "primary", "on-primary", "primary-container", "on-primary-container",
+      "secondary", "tertiary", "surface", "on-surface", "surface-variant",
+      "outline", "error"
+    ],
+    "harmony": {
+      "modes": ["analogous", "triadic", "complementary"],
+      "lightnessBucket": [0.62, 0.78],
+      "saturationBucket": [0.45, 0.70]
+    },
+    "palette": {
+      "primary": "#ffb08a",
+      "on-primary": "#3a1a10",
+      "primary-container": "#6d3247",
+      "on-primary-container": "#ffe9df",
+      "secondary": "#ffd5a6",
+      "tertiary": "#9fd8cb",
+      "surface": "#1b1220",
+      "on-surface": "#fff5ee",
+      "surface-variant": "#2c1d35",
+      "outline": "#f5d8c8",
+      "error": "#ff8a80"
+    }
+  },
+  "safety": {
+    "flash": { "maxPerSecond": 3, "maxLuminanceDelta": 0.10, "redFlashForbidden": true },
+    "audio": {
+      "bgmDefaultVolumePct": 50,
+      "muteControl": "always-visible",
+      "duckingDb": [-12, -9],
+      "duckAttackMs": [100, 300],
+      "duckReleaseMs": [500, 1000],
+      "clickGuardRampMs": [10, 20],
+      "comfortFadeMs": [300, 1000],
+      "sfxAboveBgmMaxDb": 12,
+      "loudCueForeshadowMs": 200
+    }
+  },
+  "spacing": { "base": 8, "scale": [4, 8, 12, 16, 24, 32, 48], "popupPaddingMin": 24 },
+  "density": { "maxLivingPopups": 7, "maxLivingPopupsHard": 12 },
+  "hidpi": {
+    "awareness": "per-monitor-v2",
+    "unit": "logical-px",
+    "testScales": [1.0, 1.25, 1.5, 2.0]
+  },
+  "background": {
+    "kind": "gradient",
+    "base": "#140c1a",
+    "stops": ["#2b1730", "#160d1c", "#0d0812"],
+    "bokeh": ["#ff9e7a", "#ffd6a5", "#8fd6c6", "#c9a7e8"],
+    "bokehOpacity": 0.35,
+    "stars": true,
+    "vignette": 0.55
+  },
+  "sound": {
+    "builtin": {
+      "bgm": "audio/bgm_celebration.wav",
+      "wax": "audio/sfx_wax.wav",
+      "pop": "audio/sfx_pop.wav",
+      "chime": "audio/sfx_chime.wav",
+      "whoosh": "audio/sfx_whoosh.wav",
+      "blow": "audio/sfx_blow.wav",
+      "sparkle": "audio/sfx_sparkle.wav",
+      "boom": "audio/sfx_boom.wav"
+    }
+  }
+}

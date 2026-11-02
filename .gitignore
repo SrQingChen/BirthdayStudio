@@ -1,0 +1,22 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# local app data used by dev/test
+.testhome/
+.exehome/
+.tests/
+build/
+dist/
+*.spec
+
+# editor/OS noise
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+
+# user exports
+*.bbp

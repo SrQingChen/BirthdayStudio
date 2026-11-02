@@ -1,0 +1,12 @@
+{
+  "id": "aurora-glass",
+  "name": "极光玻璃（示例插件）",
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "host": ">=1.0.0 <2.0.0",
+  "author": "SrQingChen",
+  "description": "示例主题插件：为轨迹弹窗提供极光带外观，并微调主题色板。只包含 QML、令牌与资产，不执行任何 Python。",
+  "slots": ["PopupCard"],
+  "permissions": ["read-assets"],
+  "license": "GPL-3.0-or-later OR proprietary (plugin exception)"
+}

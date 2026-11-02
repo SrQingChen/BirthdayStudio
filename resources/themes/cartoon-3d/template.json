@@ -1,0 +1,63 @@
+{
+  "name": "卡通立体",
+  "description": "奶油底色、糖果色与厚底阴影的玩具质感生日会。",
+  "meta": {
+    "theme": "cartoon-3d",
+    "author": "SrQingChen"
+  },
+  "global": {
+    "environment": { "mode": "light", "ambient_brightness": 1.0 },
+    "audio": { "master_volume_pct": 50, "bgm": { "path": "audio/bgm_celebration.wav", "volume_pct": 50 } }
+  },
+  "acts": {
+    "intro": {
+      "hint": "点一下信封，派对就开始啦",
+      "hint_size": 22,
+      "envelope": {
+        "paper_color": "#fffdf7",
+        "flap_color": "#ffe6bc",
+        "seal_color": "#ff6f59",
+        "seal_highlight": "#ff9a86",
+        "ribbon_color": "#2fb8a3",
+        "thread_color": "#a33a2c"
+      }
+    },
+    "wax": {
+      "letter": {
+        "paper_color": "#fffaf0",
+        "ink_color": "#3b2a2f",
+        "accent_color": "#e5533d",
+        "font_family": "han",
+        "font_size_px": 21,
+        "line_height": 1.75
+      }
+    },
+    "popups": {
+      "style": "cartoon",
+      "color_strategy": {
+        "mode": "harmony",
+        "harmony": "triadic",
+        "base_hue": 10,
+        "saturation_bucket": [0.58, 0.78],
+        "lightness_bucket": [0.72, 0.86]
+      }
+    },
+    "confirm": { "style": "cartoon" },
+    "cake": {
+      "cake": {
+        "layers": [
+          { "radius": 200, "height": 92, "color": "#ffc7b5", "frosting": "#fff7ec" },
+          { "radius": 152, "height": 80, "color": "#ffb199", "frosting": "#fff0e2" },
+          { "radius": 106, "height": 70, "color": "#ff9f86", "frosting": "#fff7ee" }
+        ],
+        "plate_color": "#ffe3c4"
+      },
+      "candles": {
+        "colors": ["#ff6f59", "#ffc93c", "#2fb8a3", "#8a7cf0", "#ff8fb1"]
+      }
+    },
+    "finale": {
+      "confetti": { "colors": ["#ff6f59", "#ffc93c", "#2fb8a3", "#8a7cf0", "#ff8fb1"] }
+    }
+  }
+}
