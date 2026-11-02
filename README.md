@@ -62,6 +62,11 @@ BirthdayStudio 是一个 **配置驱动的交互式生贺演出终端**，用 Py
 - 插件自动内嵌到导出包，收礼人零感知。
 - 版本迁移框架：`schema_version` + 迁移器，旧版 `theme.json` 可导入。
 
+## 下载
+
+- Windows x64 免安装包：[GitHub Releases](https://github.com/SrQingChen/BirthdayStudio/releases/latest)
+- 源码：仓库 tag `v1.0.0`
+
 ## 快速开始
 
 要求：Windows 10/11，Python 3.10+。

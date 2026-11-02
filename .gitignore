@@ -24,3 +24,8 @@ desktop.ini
 # release artifacts
 release/
 .release_build/
+
+# release artifacts at workspace root
+/BirthdayStudio-*.zip
+/SHA256SUMS.txt
+/RELEASE_NOTES.md
