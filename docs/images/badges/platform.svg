@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="233" height="36" viewBox="0 0 233 36" role="img">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2c1a34"/>
+      <stop offset="1" stop-color="#150d1e"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.20"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="pill"><rect x="0.5" y="0.5" width="232" height="35" rx="18.0"/></clipPath>
+  </defs>
+  <g clip-path="url(#pill)">
+    <rect x="0.5" y="0.5" width="232" height="35" rx="18.0" fill="url(#bg)"/>
+    <rect x="0.5" y="0.5" width="232" height="17" fill="url(#sheen)"/>
+    <rect x="0.5" y="0.5" width="232" height="35" rx="18.0" fill="none" stroke="#ffd166" stroke-opacity="0.42"/>
+  </g>
+  <circle cx="17" cy="18.0" r="3" fill="#ffd166"/>
+  <text x="28" y="23" font-family="Segoe UI, Noto Sans SC, sans-serif" font-size="9" letter-spacing="1.4" fill="#ffd166" fill-opacity="0.9">PLATFORM</text>
+  <text x="98.80000000000001" y="23.6" font-family="Segoe UI, Noto Sans SC, sans-serif" font-size="12.5" font-weight="600" fill="#fff8ee">Windows 10 / 11</text>
+</svg>
