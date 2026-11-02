@@ -20,3 +20,7 @@ desktop.ini
 
 # user exports
 *.bbp
+
+# release artifacts
+release/
+.release_build/
