@@ -187,19 +187,19 @@ def text_layer() -> Image.Image:
             d.text((cx, cy), ch, font=fnt, fill=fill)
             cx += d.textlength(ch, font=fnt) + tracking
 
-    tracked("BIRTHDAY STUDIO  ·  V1.0", (x, 70 * S), font("georgia.ttf", 17 * S), (255, 176, 138, 230), 3.2 * S)
+    tracked("BIRTHDAY STUDIO  ·  V1.0", (x, 70 * S), font("georgia.ttf", 20 * S), (255, 176, 138, 230), 3.2 * S)
     title_font = font("georgiab.ttf", 92 * S)
     d.text((x + 2 * S, 115 * S), "BirthdayStudio", font=title_font, fill=(0, 0, 0, 45))
     d.text((x, 112 * S), "BirthdayStudio", font=title_font, fill=(255, 248, 238, 255))
 
     d.rounded_rectangle([x, 245 * S, x + 78 * S, 249 * S], radius=2 * S, fill=(255, 176, 138, 235))
 
-    serif = font("NotoSerifSC-VF.ttf", 33 * S)
-    d.text((x, 272 * S), "把一句「生日快乐」，", font=serif, fill=(255, 233, 223, 238))
-    d.text((x, 326 * S), "做成一场会自己展开的七幕仪式。", font=serif, fill=(255, 233, 223, 238))
+    serif = font("NotoSerifSC-VF.ttf", 36 * S)
+    d.text((x, 268 * S), "把一句「生日快乐」，", font=serif, fill=(255, 233, 223, 238))
+    d.text((x, 324 * S), "做成一场会自己展开的七幕仪式。", font=serif, fill=(255, 233, 223, 238))
 
-    sans = font("NotoSansSC-VF.ttf", 17 * S)
-    tracked("七幕仪式  /  配置驱动  /  实时预览  /  一键导出", (x, 402 * S), sans, (232, 210, 202, 225), 1.6 * S)
+    sans = font("NotoSansSC-VF.ttf", 20 * S)
+    tracked("七幕仪式  /  配置驱动  /  实时预览  /  一键导出", (x, 400 * S), sans, (232, 210, 202, 225), 1.6 * S)
     return layer
 
 
