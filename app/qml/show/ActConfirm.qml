@@ -51,10 +51,13 @@ Item {
 
         Rectangle {
             id: shadow
+            // V1.1.0 fix #2: contained — the old height (-10 with y=16) leaked
+            // a 6px strip below the confirm card, same stray-line defect as
+            // the popup cards.
             x: 10
             y: 16
             width: parent.width - 20
-            height: parent.height - 10
+            height: parent.height - 16
             radius: 26
             color: "#000000"
             opacity: root.highContrast ? 0 : 0.30
@@ -102,6 +105,44 @@ Item {
                 source: showBridge.textureUrl("grain.png")
                 fillMode: Image.Tile
                 opacity: root.highContrast || root.cartoon ? 0 : 0.3
+            }
+
+            // ---- liquid-glass layers (V1.1.1) ------------------------- //
+            Rectangle {
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: parent.height * 0.42
+                radius: card.radius
+                visible: !root.highContrast
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, root.cartoon ? 0.22 : 0.26) }
+                    GradientStop { position: 0.6; color: Qt.rgba(1, 1, 1, 0.06) }
+                    GradientStop { position: 1.0; color: Qt.rgba(1, 1, 1, 0.0) }
+                }
+            }
+            Rectangle {
+                x: parent.width * 0.05
+                y: -parent.height * 0.3
+                width: parent.width * 0.28
+                height: parent.height * 1.6
+                rotation: 16
+                visible: !root.highContrast
+                opacity: theme.dark ? 0.10 : 0.16
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: "transparent" }
+                    GradientStop { position: 0.5; color: "#ffffff" }
+                    GradientStop { position: 1.0; color: "transparent" }
+                }
+            }
+            Rectangle {
+                anchors.fill: parent
+                anchors.margins: 1
+                radius: card.radius - 1
+                color: "transparent"
+                border.width: 1
+                border.color: Qt.rgba(1, 1, 1, root.highContrast ? 0 : (root.cartoon ? 0.30 : 0.24))
             }
 
             // top highlight

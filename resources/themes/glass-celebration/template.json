@@ -35,11 +35,12 @@
     "popups": {
       "style": "glass",
       "color_strategy": {
-        "mode": "harmony",
+        "mode": "palette",
         "harmony": "analogous",
         "base_hue": 14,
         "saturation_bucket": [0.46, 0.68],
-        "lightness_bucket": [0.64, 0.78]
+        "lightness_bucket": [0.64, 0.78],
+        "palette": ["#f4c7a6", "#e79aa8", "#f2d7a2", "#d38c78"]
       }
     },
     "confirm": { "style": "glass" },

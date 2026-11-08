@@ -24,7 +24,7 @@ from .session_bridge import SessionBridge
 from .show_bridge import ShowBridge
 from .theme_bridge import ThemeBridge
 
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.1.1"
 
 
 class AppBridge(QObject):
@@ -245,6 +245,12 @@ class AppBridge(QObject):
     def _resolve_player_profile(self, arg: str) -> tuple[Path, Profile]:
         if not arg:
             raise ValueError("缺少演出配置档参数（--play <profile>）")
+        if arg == "last":
+            # Convenience for double-click launchers: resolve to the profile
+            # most recently opened in the editor.
+            arg = str(self.settings.get("last_profile_id", "") or "")
+            if not arg:
+                raise ValueError("没有最近打开的配置档：请先在编辑器中打开一个，或指定 --play <profile>")
         raw = arg
         if raw.startswith("file:"):
             raw = QUrl(raw).toLocalFile()

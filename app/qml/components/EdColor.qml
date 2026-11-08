@@ -12,6 +12,7 @@ Item {
     readonly property var ui: (theme.tokens && theme.tokens.ui) ? theme.tokens.ui : ({})
     readonly property color borderColor: ui.panelBorder || "#ffffff14"
     readonly property color accent: ui.accent || "#ffb08a"
+    readonly property bool dark: !ui || ui.mode !== "light"
 
     implicitHeight: 34
 
@@ -22,7 +23,7 @@ Item {
         radius: 8
         color: root.value || "#000000"
         border.width: 1
-        border.color: Qt.rgba(1, 1, 1, 0.3)
+        border.color: root.dark ? Qt.rgba(1, 1, 1, 0.3) : Qt.rgba(0, 0, 0, 0.22)
         MouseArea {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor

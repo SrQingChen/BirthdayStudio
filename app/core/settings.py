@@ -18,7 +18,9 @@ DEFAULTS: dict[str, Any] = {
     "layout": {"left_width": 268, "right_width": 348, "timeline_height": 220},
     "preview": {
         "resolution": "1080p",
-        "zoom": 1.0,
+        # Percentage (50..200). A legacy default of 1.0 here once shrank the
+        # preview stage to an invisible speck — see Editor.qml sanitize.
+        "zoom": 100,
         "environment": "dark",
         "slowmo": False,
         "muted": False,

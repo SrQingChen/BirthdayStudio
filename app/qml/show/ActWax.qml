@@ -54,6 +54,16 @@ Item {
         onOpened: root.revealLetter()
     }
 
+    // Act 1 teaches "tap the envelope"; keep that affordance here so a tap
+    // anywhere on the sealed envelope breaks the seal. The seal itself stays
+    // the visual focus and keeps its 96px precise hit target (F-03).
+    MouseArea {
+        anchors.fill: envelope
+        enabled: !root.opening && !root.letterShown
+        cursorShape: Qt.PointingHandCursor
+        onClicked: envelope.activate()
+    }
+
     LetterView {
         id: letter
         anchors.fill: parent

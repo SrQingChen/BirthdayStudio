@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/SrQingChen/BirthdayStudio/releases/tag/v1.0.0"><img src="docs/images/badges/release.svg" alt="Release v1.0.0" height="28"></a>
+  <a href="https://github.com/SrQingChen/BirthdayStudio/releases/tag/v1.1.1"><img src="docs/images/badges/release.svg" alt="Release v1.1.1" height="28"></a>
   <a href="https://github.com/SrQingChen/BirthdayStudio/blob/main/LICENSE"><img src="docs/images/badges/license.svg" alt="GPL-3.0" height="28"></a>
   <img src="docs/images/badges/stack.svg" alt="PySide6 · QML · Qt 3D" height="28">
   <img src="docs/images/badges/platform.svg" alt="Windows 10 / 11" height="28">
@@ -17,7 +17,7 @@
 
 **BirthdayStudio** 用 PySide6 + QML + Qt Quick 3D 构建：**编辑器**负责编排与实时预览，**播放器**负责在干净 Windows 上零配置演出。同一套引擎、同一套设计令牌、同一份配置档。
 
-> **下载**：[Windows x64 免安装包](https://github.com/SrQingChen/BirthdayStudio/releases/latest) · [GitHub Release](https://github.com/SrQingChen/BirthdayStudio/releases/tag/v1.0.0) · 源码 tag `v1.0.0`
+> **下载**：[Windows x64 免安装包](https://github.com/SrQingChen/BirthdayStudio/releases/latest) · [GitHub Release](https://github.com/SrQingChen/BirthdayStudio/releases/tag/v1.1.1) · 源码 tag `v1.1.1`
 
 <p align="center">
   <strong>开场</strong> → 火漆 · 信纸 → 轨迹祝福 → 收下祝福 → 中心消融 → <strong>蛋糕 · 许愿</strong> → <strong>终幕</strong>
@@ -92,5 +92,5 @@ scripts/    构建 / 素材生成 / README 资产
 ---
 
 <p align="center">
-  <sub><strong>BirthdayStudio 1.0.0</strong> · 作者 <a href="https://github.com/SrQingChen">SrQingChen</a> · 用一场仪式，认真地说一句生日快乐。</sub>
+  <sub><strong>BirthdayStudio 1.1.1</strong> · 作者 <a href="https://github.com/SrQingChen">SrQingChen</a> · 用一场仪式，认真地说一句生日快乐。</sub>
 </p>

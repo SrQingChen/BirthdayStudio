@@ -171,6 +171,12 @@ class IntroAct(ActBase):
     hint_size: int = Field(default=22, ge=14, le=44)
     envelope: EnvelopeConfig = Field(default_factory=EnvelopeConfig)
     envelope_scale: float = Field(default=1.0, ge=0.6, le=1.4)
+    # V1.1.0 fix #6 — opening gate: a dim screen with one button; the
+    # envelope and wax seal only appear after the tap (act-1 "on-tap" entry,
+    # audio-gesture best practice from the design doc, chapter 4).
+    gate: bool = True
+    gate_text: str = Field(default="开启这份祝福", max_length=16)
+    gate_subtext: str = Field(default="一份心意，正在等你点开", max_length=30)
 
     _v = field_validator("hint_color")(_check_color)
 
@@ -275,13 +281,51 @@ class PopupCard(StrictModel):
     _v = field_validator("accent")(_check_color)
 
 
+class SwarmConfig(StrictModel):
+    """V1.1.0 fix #5 — the note swarm that traces the trajectory.
+
+    Hundreds of small sticky notes appear in quick succession, overlapping
+    ~90%, drawing the preset curve (heart / line / wave …) as one band
+    before the readable cards fly in. The maxLivingPopups budget applies to
+    readable glass cards only; the swarm is a trajectory-tracing effect on
+    par with finale confetti (hard cap: count ≤ 400 static quads).
+    """
+
+    enabled: bool = True
+    count: int = Field(default=320, ge=40, le=400)
+    note_size: int = Field(default=44, ge=20, le=90)
+    # V1.1.2 — one aspect ratio for EVERY note in the band, so the swarm never
+    # mixes square/portrait/landscape chips. `note_size` is the width; the
+    # height is derived from this ratio.
+    note_aspect: Literal["1:1", "4:3", "3:4", "16:9"] = "1:1"
+    overlap_pct: int = Field(default=90, ge=50, le=98)
+    stagger_ms: int = Field(default=14, ge=4, le=60)
+    fade_in_ms: int = Field(default=120, ge=40, le=600)
+    jitter_px: int = Field(default=6, ge=0, le=30)
+    cards_delay_after: bool = True
+    # V1.1.1 — text on the notes: one entry per line, cycled along the curve
+    text_block: str = Field(default="生日快乐\n愿你快乐\n岁岁平安\n心想事成", max_length=600)
+    text_size: int = Field(default=11, ge=6, le=22)
+    text_every: int = Field(default=6, ge=1, le=40)
+
+
 class PopupsAct(ActBase):
     exit: str = "auto:1200"
     trajectory: TrajectoryConfig = Field(default_factory=TrajectoryConfig)
     sequence: PopupSequenceConfig = Field(default_factory=PopupSequenceConfig)
     color_strategy: HarmonyConfig = Field(default_factory=HarmonyConfig)
+    swarm: SwarmConfig = Field(default_factory=SwarmConfig)
     style: Literal["glass", "cartoon"] = "glass"
     beat_sync: bool = False
+    # V1.1.2 — the readable cards are an independent layer: they can be
+    # switched off after the swarm, and capped to the first N cards without
+    # deleting the rest of the list (0 = show every card).
+    cards_enabled: bool = True
+    cards_limit: int = Field(default=0, ge=0, le=24)
+    # Auto-advance is independent of the card sequence: when False the act
+    # waits for a tap (or the global skip button) before moving to confirm.
+    # `sequence.hold_after_ms` is the dwell time when it is True.
+    auto_advance: bool = True
     cards: list[PopupCard] = Field(
         default_factory=lambda: [
             PopupCard(title="第一次遇见", body="那天的风很轻，你笑得很亮。", emoji="🌤"),
@@ -402,6 +446,7 @@ class CakeAct(ActBase):
     wish: WishConfig = Field(default_factory=WishConfig)
     jelly: JellyConfig = Field(default_factory=JellyConfig)
     hint: str = "点亮蜡烛后，逐根点击吹灭"
+    interaction_hint: str = Field(default="拖动可旋转蛋糕 · 点击蛋糕会弹起来", max_length=40)
 
 
 class ConfettiConfig(StrictModel):

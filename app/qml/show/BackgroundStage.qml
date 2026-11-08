@@ -18,6 +18,39 @@ Item {
     readonly property real vignetteStrength: bg.vignette !== undefined ? bg.vignette : 0.55
     readonly property bool stars: bg.stars === true && !highContrast
     readonly property bool dots: bg.confettiDots === true && !highContrast
+    // Ambient dressing is on unless a theme opts out or contrast mode is on.
+    readonly property bool ambience: bg.ambience !== false && !highContrast
+    readonly property bool stringLights: ambience && dark
+    readonly property bool bunting: ambience && !dark
+    readonly property int bulbsPerSwag: 9
+    readonly property var swagDefs: [
+        { "x0": 0.02, "x1": 0.50, "y0": 0.012, "sag": 0.052 },
+        { "x0": 0.50, "x1": 0.98, "y0": 0.012, "sag": 0.052 }
+    ]
+
+    // Position of `t` (0..1) along a swag, in stage pixels. The canvas draws
+    // the wire and the bulb delegates sit on the same curve.
+    function swagPoint(t, d) {
+        return {
+            "x": (d.x0 + (d.x1 - d.x0) * t) * width,
+            "y": (d.y0 + d.sag * Math.sin(Math.PI * t)) * height
+        }
+    }
+
+    readonly property var moteSpecs: {
+        var out = []
+        for (var i = 0; i < 16; i++) {
+            out.push({
+                "fx": 0.06 + ((i * 37) % 100) / 112,
+                "fy": 0.18 + ((i * 53) % 100) / 155,
+                "s": 10 + ((i * 29) % 18),
+                "o": 0.10 + ((i * 17) % 20) / 100,
+                "dur": 12000 + (i % 5) * 2600,
+                "sway": 6 + (i % 4) * 3
+            })
+        }
+        return out
+    }
 
     Rectangle {
         anchors.fill: parent
@@ -40,6 +73,16 @@ Item {
             ctx.fillStyle = g
             ctx.fillRect(0, 0, w, h)
 
+            // soft wash from above: the room reads as lit, not flat
+            if (root.ambience) {
+                var tg = ctx.createRadialGradient(w * 0.5, -h * 0.18, 0, w * 0.5, -h * 0.18, h * 1.15)
+                tg.addColorStop(0, Qt.rgba(1.0, 0.88, 0.70, root.dark ? 0.17 : 0.14))
+                tg.addColorStop(0.5, Qt.rgba(1.0, 0.82, 0.64, root.dark ? 0.055 : 0.045))
+                tg.addColorStop(1, Qt.rgba(0, 0, 0, 0))
+                ctx.fillStyle = tg
+                ctx.fillRect(0, 0, w, h)
+            }
+
             // warm centre bloom
             var rg = ctx.createRadialGradient(w * 0.5, h * 0.46, 0, w * 0.5, h * 0.5, Math.max(w, h) * 0.62)
             rg.addColorStop(0, Qt.rgba(1.0, 0.72, 0.56, root.dark ? 0.16 : 0.20))
@@ -54,6 +97,40 @@ Item {
                 cg.addColorStop(1, Qt.rgba(0, 0, 0, 0))
                 ctx.fillStyle = cg
                 ctx.fillRect(0, 0, w, h)
+            }
+
+            // fairy-light wires (dark) / bunting (light). Bulbs are separate
+            // items so they can twinkle; the wire itself is painted once.
+            if (root.stringLights || root.bunting) {
+                for (var sw = 0; sw < root.swagDefs.length; sw++) {
+                    var sd = root.swagDefs[sw]
+                    ctx.beginPath()
+                    for (var sk = 0; sk <= 28; sk++) {
+                        var sp = root.swagPoint(sk / 28, sd)
+                        if (sk === 0)
+                            ctx.moveTo(sp.x, sp.y)
+                        else
+                            ctx.lineTo(sp.x, sp.y)
+                    }
+                    ctx.strokeStyle = root.dark ? "rgba(255,232,196,0.20)" : "rgba(74,44,42,0.30)"
+                    ctx.lineWidth = 1.2
+                    ctx.stroke()
+
+                    if (root.bunting) {
+                        for (var f = 0; f < root.bulbsPerSwag; f++) {
+                            var ft = (f + 0.5) / root.bulbsPerSwag
+                            var fp = root.swagPoint(ft, sd)
+                            var fc = Qt.color(root.bokehColors[f % root.bokehColors.length])
+                            ctx.fillStyle = Qt.rgba(fc.r, fc.g, fc.b, 0.62)
+                            ctx.beginPath()
+                            ctx.moveTo(fp.x - 9, fp.y + 1)
+                            ctx.lineTo(fp.x + 9, fp.y + 1)
+                            ctx.lineTo(fp.x, fp.y + 26)
+                            ctx.closePath()
+                            ctx.fill()
+                        }
+                    }
+                }
             }
 
             // deterministic star field
@@ -132,6 +209,136 @@ Item {
                 loops: Animation.Infinite
                 NumberAnimation { from: 10; to: -16; duration: 17000 + index * 2600; easing.type: Easing.InOutSine }
                 NumberAnimation { from: -16; to: 10; duration: 17000 + index * 2600; easing.type: Easing.InOutSine }
+            }
+        }
+    }
+
+    // warm pool of light under the cake stand
+    Image {
+        visible: root.variant === "cake" && !root.highContrast
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: -height * 0.34
+        width: root.width * 1.28
+        height: root.height * 0.46
+        source: showBridge.textureUrl("bokeh_cream.png")
+        fillMode: Image.Stretch
+        smooth: true
+        opacity: 0.22
+    }
+
+    // warm bulbs on the two swags (dark themes)
+    Item {
+        id: bulbLayer
+        anchors.fill: parent
+        visible: root.stringLights
+
+        Repeater {
+            model: root.stringLights ? root.bulbsPerSwag * 2 : 0
+            Item {
+                id: bulb
+                property int swagIndex: index < root.bulbsPerSwag ? 0 : 1
+                property real t: ((index % root.bulbsPerSwag) + 0.5) / root.bulbsPerSwag
+                property var p: root.swagPoint(t, root.swagDefs[swagIndex])
+                width: 34
+                height: 34
+                x: p.x - width / 2
+                y: p.y - height / 2 + 4
+                opacity: 0.82
+
+                Image {
+                    anchors.centerIn: parent
+                    width: 38
+                    height: 38
+                    source: showBridge.textureUrl("bokeh_cream.png")
+                    fillMode: Image.PreserveAspectFit
+                    smooth: true
+                    opacity: 0.78
+                }
+                Rectangle {
+                    anchors.centerIn: parent
+                    width: 6
+                    height: 6
+                    radius: 3
+                    color: "#fff6e0"
+                }
+                SequentialAnimation on opacity {
+                    running: !root.reducedMotion
+                    loops: Animation.Infinite
+                    NumberAnimation {
+                        from: 0.52; to: 0.94
+                        duration: 1900 + index * 170
+                        easing.type: Easing.InOutSine
+                    }
+                    NumberAnimation {
+                        from: 0.94; to: 0.52
+                        duration: 2100 + index * 150
+                        easing.type: Easing.InOutSine
+                    }
+                }
+            }
+        }
+    }
+
+    // slow dust motes drifting through the light
+    Repeater {
+        model: root.ambience ? 16 : 0
+
+        Image {
+            id: mote
+            property var spec: root.moteSpecs[index % root.moteSpecs.length]
+            property real driftX: 0
+            property real driftY: 0
+            width: spec.s
+            height: width
+            x: root.width * spec.fx - width / 2 + driftX
+            y: root.height * spec.fy - height / 2 + driftY
+            source: showBridge.textureUrl(index % 2 === 0 ? "bokeh_cream.png" : "bokeh_peach.png")
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+            opacity: spec.o
+            visible: !root.highContrast
+            SequentialAnimation on driftY {
+                running: !root.reducedMotion
+                loops: Animation.Infinite
+                NumberAnimation {
+                    from: 18; to: -42
+                    duration: spec.dur
+                    easing.type: Easing.InOutSine
+                }
+                NumberAnimation {
+                    from: -42; to: 18
+                    duration: spec.dur
+                    easing.type: Easing.InOutSine
+                }
+            }
+            SequentialAnimation on driftX {
+                running: !root.reducedMotion
+                loops: Animation.Infinite
+                NumberAnimation {
+                    from: -spec.sway; to: spec.sway
+                    duration: 9000 + index * 420
+                    easing.type: Easing.InOutSine
+                }
+                NumberAnimation {
+                    from: spec.sway; to: -spec.sway
+                    duration: 9000 + index * 420
+                    easing.type: Easing.InOutSine
+                }
+            }
+            SequentialAnimation on opacity {
+                running: !root.reducedMotion && !root.highContrast
+                loops: Animation.Infinite
+                NumberAnimation {
+                    from: spec.o; to: spec.o * 0.35
+                    duration: 2600 + index * 140
+                    easing.type: Easing.InOutSine
+                }
+                NumberAnimation {
+                    from: spec.o * 0.35; to: spec.o
+                    duration: 2600 + index * 140
+                    easing.type: Easing.InOutSine
+                }
             }
         }
     }

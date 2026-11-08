@@ -17,10 +17,12 @@ Item {
     implicitWidth: cardWidth
     implicitHeight: cardHeight
 
-    readonly property var palette: (tokens && tokens.color && tokens.color.palette) ? tokens.color.palette : ({})
+    // Named `paletteColors`: a `palette` property shadows QQuickItem's
+    // attached palette and makes the engine log an override warning.
+    readonly property var paletteColors: (tokens && tokens.color && tokens.color.palette) ? tokens.color.palette : ({})
     readonly property bool dark: !tokens || !tokens.ui || tokens.ui.mode !== "light"
-    readonly property color ink: highContrast ? (dark ? "#ffffff" : "#000000") : (palette["on-surface"] || "#fff5ee")
-    readonly property color surface: palette["surface"] || "#1b1220"
+    readonly property color ink: highContrast ? (dark ? "#ffffff" : "#000000") : (paletteColors["on-surface"] || "#fff5ee")
+    readonly property color surface: paletteColors["surface"] || "#1b1220"
     readonly property bool cartoon: displayStyle === "cartoon"
     readonly property bool hasImage: card.image !== undefined && card.image !== ""
     readonly property int radius: cartoon ? 20 : ((tokens && tokens.shape && tokens.shape.l) || 16)
@@ -30,12 +32,14 @@ Item {
         return Qt.rgba(q.r, q.g, q.b, a)
     }
 
-    // shadow (two low-alpha layers; hard shadow for the toy look)
+    // Soft depth backing (V1.1.0 fix #2): both layers are fully contained in
+    // the card bounds — the v1.0.0 offset rects leaked a 2-4px strip below
+    // every card that read as a stray line outside the note.
     Rectangle {
         x: cartoon ? 8 : 5
         y: cartoon ? 12 : 14
         width: parent.width - (cartoon ? 16 : 10)
-        height: parent.height - 10
+        height: parent.height - (cartoon ? 12 : 14)
         radius: root.radius + 4
         color: "#000000"
         opacity: cartoon ? (root.highContrast ? 0 : 0.26) : (root.highContrast ? 0 : 0.22)
@@ -44,7 +48,7 @@ Item {
         x: cartoon ? 4 : 2
         y: cartoon ? 6 : 7
         width: parent.width - (cartoon ? 8 : 4)
-        height: parent.height - 4
+        height: parent.height - (cartoon ? 6 : 7)
         radius: root.radius + 2
         color: "#000000"
         opacity: cartoon ? 0 : (root.highContrast ? 0 : 0.14)
@@ -59,32 +63,36 @@ Item {
             if (root.highContrast)
                 return root.dark ? "#1b1220" : "#ffffff"
             if (root.cartoon)
-                return Qt.tint(root.surface, root.withAlpha(root.accentColor, 0.34))
-            return root.withAlpha(root.surface, root.dark ? 0.64 : 0.68)
+                return Qt.tint(root.surface, root.withAlpha(root.accentColor, 0.42))
+            // A slightly more opaque, accent-warmed pane: on the dark stage
+            // the old 0.78 alpha read as a black hole rather than glass.
+            return Qt.tint(root.withAlpha(root.surface, 0.92),
+                           root.withAlpha(root.accentColor, 0.10))
         }
         border.width: root.cartoon ? 2 : (root.highContrast ? 2 : 1.4)
         border.color: root.cartoon
                       ? (root.highContrast ? root.ink : "#4a2c2a")
-                      : (root.highContrast ? root.ink : root.withAlpha("#ffffff", root.dark ? 0.42 : 0.75))
+                      : (root.highContrast ? root.ink
+                                           : root.withAlpha(root.accentColor, root.dark ? 0.55 : 0.62))
 
         gradient: Gradient {
             GradientStop {
                 position: 0.0
                 color: root.highContrast ? (root.dark ? "#1b1220" : "#ffffff")
                        : root.cartoon ? Qt.tint(root.surface, root.withAlpha(root.accentColor, 0.30))
-                       : root.withAlpha(root.accentColor, root.dark ? 0.30 : 0.36)
+                       : root.withAlpha(root.accentColor, root.dark ? 0.38 : 0.42)
             }
             GradientStop {
                 position: 0.55
                 color: root.highContrast ? (root.dark ? "#1b1220" : "#ffffff")
                        : root.cartoon ? Qt.tint(root.surface, root.withAlpha(root.accentColor, 0.22))
-                       : root.withAlpha(root.surface, root.dark ? 0.72 : 0.76)
+                       : "transparent"
             }
             GradientStop {
                 position: 1.0
                 color: root.highContrast ? (root.dark ? "#140c1a" : "#ffffff")
                        : root.cartoon ? Qt.tint(root.surface, root.withAlpha(root.accentColor, 0.16))
-                       : root.withAlpha(root.surface, root.dark ? 0.82 : 0.84)
+                       : Qt.rgba(0, 0, 0, 0.16)
             }
         }
 
@@ -120,6 +128,47 @@ Item {
             opacity: root.highContrast || root.cartoon ? 0 : 0.32
         }
 
+        // ---- liquid-glass layers (V1.1.1) --------------------------- //
+        // specular sheen across the top third: the "琉璃" highlight
+        Rectangle {
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: parent.height * 0.38
+            radius: root.radius
+            visible: !root.highContrast
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, root.cartoon ? 0.22 : 0.26) }
+                GradientStop { position: 0.55; color: Qt.rgba(1, 1, 1, 0.06) }
+                GradientStop { position: 1.0; color: Qt.rgba(1, 1, 1, 0.0) }
+            }
+        }
+        // diagonal light streak (clipped by the shell)
+        Rectangle {
+            x: parent.width * 0.06
+            y: -parent.height * 0.25
+            width: parent.width * 0.30
+            height: parent.height * 1.5
+            rotation: 18
+            visible: !root.highContrast
+            opacity: root.dark ? 0.10 : 0.16
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: "transparent" }
+                GradientStop { position: 0.5; color: "#ffffff" }
+                GradientStop { position: 1.0; color: "transparent" }
+            }
+        }
+        // inner rim light: a bright hairline just inside the border
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: 1
+            radius: root.radius - 1
+            color: "transparent"
+            border.width: 1
+            border.color: Qt.rgba(1, 1, 1, root.highContrast ? 0 : (root.cartoon ? 0.30 : 0.24))
+        }
+
         // top highlight
         Rectangle {
             anchors.top: parent.top
@@ -134,20 +183,39 @@ Item {
         Rectangle {
             visible: root.cartoon && !root.highContrast
             anchors.bottom: parent.bottom
+            anchors.bottomMargin: 2.5
             anchors.left: parent.left
             anchors.right: parent.right
-            height: 7
+            anchors.leftMargin: 2.5
+            anchors.rightMargin: 2.5
+            height: 6
+            radius: 3
             color: Qt.darker(root.accentColor, 1.35)
             opacity: 0.9
         }
 
-        // tape (cartoon)
+        // contained inner bottom shade (glass): compensates the removed
+        // overhanging shadow with a clipped-in depth cue
+        Rectangle {
+            visible: !root.cartoon && !root.highContrast
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 3
+            gradient: Gradient {
+                orientation: Gradient.Vertical
+                GradientStop { position: 0.0; color: "transparent" }
+                GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.16) }
+            }
+        }
+
+        // tape (cartoon) — fully inside the card (V1.1.0 fix #2)
         Rectangle {
             visible: root.cartoon && !root.highContrast
             x: parent.width * 0.5 - 34
-            y: -6
+            y: 3
             width: 68
-            height: 18
+            height: 16
             rotation: -4
             color: root.withAlpha("#fff4d6", 0.8)
             border.width: 1
@@ -244,5 +312,29 @@ Item {
                 border.color: Qt.rgba(1, 1, 1, 0.28)
             }
         }
+
+        // accent signature at the foot of the pane
+        Rectangle {
+            visible: !root.highContrast
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 9
+            width: 26
+            height: 2
+            radius: 1
+            color: root.withAlpha(root.accentColor, root.dark ? 0.55 : 0.65)
+        }
+    }
+
+    // cartoon cards get a sticker-like outline; glass keeps its single accent
+    // border so the pane does not read as a double frame
+    Rectangle {
+        anchors.fill: parent
+        anchors.margins: -4
+        radius: root.radius + 4
+        color: "transparent"
+        border.width: 1.5
+        border.color: root.withAlpha(root.accentColor, root.dark ? 0.28 : 0.34)
+        visible: !root.highContrast && root.cartoon
     }
 }

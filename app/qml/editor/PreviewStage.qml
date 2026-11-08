@@ -43,10 +43,12 @@ Item {
     function start(act) {
         if (!hasProfile)
             return
-        root.running = true
-        stage.start(act || "")
+        // Assets/BGM resolve against the profile dir — sync it before the
+        // show starts, otherwise the first act may look up the previous dir.
         showBridge.setProfileDir(session.profileDir)
         showBridge.setPluginIds(session.draft.plugins || [])
+        root.running = true
+        stage.start(act || "")
     }
     function stop() {
         stage.stop()
@@ -127,7 +129,7 @@ Item {
                     { value: "150", label: "150%" },
                     { value: "200", label: "200%" }
                 ]
-                onPicked: function (v) { root.zoom = parseInt(v) }
+                onPicked: function (v) { root.zoom = parseInt(v) || 100 }
             }
             EdButton { text: "低动效"; small: true; checkable: true; checked: root.lowMotion; onClicked: root.lowMotion = !root.lowMotion }
             EdButton { text: "高对比"; small: true; checkable: true; checked: root.highContrast; onClicked: root.highContrast = !root.highContrast }
@@ -167,7 +169,9 @@ Item {
                     width: root.logicalWidth
                     height: root.logicalHeight
                     anchors.centerIn: parent
-                    scale: (viewport.width / width) * (root.zoom / 100)
+                    // Clamp the zoom factor so no persisted/invalid value can
+                    // ever collapse the whole stage into an invisible speck.
+                    scale: (viewport.width / width) * Math.max(0.5, Math.min(2.0, root.zoom / 100))
                     transformOrigin: Item.Center
 
                     ShowStage {

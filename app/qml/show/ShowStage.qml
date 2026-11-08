@@ -143,6 +143,10 @@ Item {
         cakeActive = false
         if (cakeScene) {
             cakeScene.resetAll()
+            // Drop the activation edge so a replay (stop -> start, or the
+            // finale "再看一次") re-runs the cake entrance; onActiveChanged
+            // is edge-triggered and would otherwise never fire again.
+            cakeScene.active = false
         }
         currentActId = ""
         actIndex = -1

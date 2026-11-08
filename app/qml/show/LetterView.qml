@@ -38,8 +38,7 @@ Item {
         var textWidth = Math.max(120, cw - margins)
         var charsPerLine = Math.max(10, Math.floor(textWidth / (fontSize * 0.98)))
         var lineTotal = 0
-        var segments = bodyText.split("
-")
+        var segments = bodyText.split("\n")
         for (var i = 0; i < segments.length; i++)
             lineTotal += Math.max(1, Math.ceil(segments[i].length / charsPerLine))
         var h = 40 + 1 + 26 + lineTotal * fontSize * lineHeight + 26 + 20 + 72
@@ -89,14 +88,22 @@ Item {
             autoTimer.restart()
     }
 
+    // Guard against double delivery (stage-wide layer + card handler both
+    // receiving the same tap — they used to fire reveal-all + skip together).
+    property real lastAdvanceAt: 0
+
     function advance() {
         if (!started)
             return
+        var now = Date.now()
+        if (now - lastAdvanceAt < 150)
+            return
+        lastAdvanceAt = now
         if (!allRevealed) {
             revealAll()
             return
         }
-        completed()
+        actFinished()
     }
 
     anchors.fill: parent
@@ -115,8 +122,13 @@ Item {
         height: root.estimatedHeight
         scale: 0.94
         opacity: 0
-
-        TapHandler { onTapped: root.advance() }
+        // The card handles its own taps too: with a long letter the Flickable
+        // grabs the pointer, so the stage-wide layer behind never sees the
+        // click (1.1.0 acceptance finding #3). advance() is time-guarded, so
+        // the two paths can never fire twice.
+        TapHandler {
+            onTapped: root.advance()
+        }
 
         // soft shadow
         Image {
@@ -245,12 +257,23 @@ Item {
 
                 Flickable {
                     id: scroller
+                    // Tap-to-advance inside the scrolling area: a handler on
+                    // cardWrap is cancelled by the Flickable's grab, so put one
+                    // here (advance() is time-guarded against double firing).
+                    TapHandler {
+                        onTapped: root.advance()
+                    }
                     width: parent.width
                     height: Math.max(120, parent.height - 113)
                     clip: true
                     contentWidth: width
                     contentHeight: root.presentation === "lines" ? lineColumn.height : bodyTextItem.implicitHeight
                     boundsBehavior: Flickable.StopAtBounds
+                    // Only grab the pointer when the letter really needs
+                    // scrolling. An always-interactive Flickable swallows
+                    // taps on the card (exclusive grab), which starved both
+                    // the card TapHandler and the stage-wide click layer.
+                    interactive: contentHeight > height + 1
                     ScrollBar.vertical: ScrollBar { policy: ScrollBar.AlwaysOff }
 
                     Text {

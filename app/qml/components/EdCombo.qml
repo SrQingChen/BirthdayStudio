@@ -13,6 +13,7 @@ ComboBox {
     readonly property color muted: ui.textMuted || "#b9a9b6"
     readonly property color accent: ui.accent || "#ffb08a"
     readonly property color borderColor: ui.panelBorder || "#ffffff14"
+    readonly property bool dark: !ui || ui.mode !== "light"
 
     implicitHeight: 34
     font.family: theme.hanFamily
@@ -20,13 +21,22 @@ ComboBox {
     model: options
     textRole: "label"
     valueRole: "value"
-    currentIndex: {
+
+    // Keep the shown index in sync with `value`. A plain binding on
+    // currentIndex breaks the first time ComboBox assigns it from user
+    // interaction, so sync explicitly instead.
+    function syncIndex() {
         for (var i = 0; i < options.length; i++) {
-            if (options[i].value === root.value)
-                return i
+            if (options[i].value === root.value) {
+                currentIndex = i
+                return
+            }
         }
-        return options.length ? 0 : -1
+        currentIndex = options.length ? 0 : -1
     }
+    onValueChanged: syncIndex()
+    onOptionsChanged: syncIndex()
+    Component.onCompleted: syncIndex()
 
     onActivated: function (index) {
         if (index >= 0 && index < options.length)
@@ -95,8 +105,13 @@ ComboBox {
         }
         background: Rectangle {
             radius: 6
-            color: parent.highlighted ? Qt.rgba(1, 1, 1, 0.10) : "transparent"
+            color: parent.highlighted
+                   ? (root.dark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.06))
+                   : "transparent"
         }
-        onClicked: root.popup.close()
+        // Do NOT close the popup here. ComboBox closes it after emitting
+        // `activated`; closing first tears down the delegate (the popup's
+        // model is only bound while visible), so `activated` never runs and
+        // the selection appears to be accepted but nothing is written back.
     }
 }

@@ -89,6 +89,9 @@
 | `envelope.seal_color` / `seal_highlight` | hex | #b3393f / #d9575c |
 | `envelope.ribbon_color` / `thread_color` | hex | #e9c46a / #7a2a2f |
 | `envelope_scale` | 0.6..1.4 | 1.0 |
+| `gate` | bool | true（1.1.0 起：暗色幕布 + 开启按钮，点击后才亮出信封；false 还原 1.0 行为） |
+| `gate_text` | str ≤16 | 开启这份祝福 |
+| `gate_subtext` | str ≤30 | 一份心意，正在等你点开 |
 
 ### wax（幕 2 · 火漆与信纸）
 
@@ -131,7 +134,27 @@
   "lightness_bucket": [0.62, 0.78],
   "palette": [], "single_color": "#ffb08a"
 },
+"swarm": {                       // 1.1.0 起：蜂群便签（沿轨迹连成曲线）
+  "enabled": true,
+  "count": 320,                  // 40..400 硬上限
+  "note_size": 44,               // 20..90 px，便签宽度
+  "note_aspect": "1:1",          // 1:1|4:3|3:4|16:9，所有便签统一比例
+  "overlap_pct": 90,             // 50..98，相邻便签重叠度
+  "stagger_ms": 14,              // 4..60，低动效模式自动放缓到 ≥30
+  "fade_in_ms": 120,             // 40..600
+  "jitter_px": 6,                // 0..30，位置/旋转抖动去机器感
+  "cards_delay_after": true,     // 曲线成形后可读卡再出场
+  "text_block": "生日快乐
+愿你快乐
+岁岁平安
+心想事成",  // 便签文字，每行一条，沿曲线循环
+  "text_size": 11,               // 6..22 px
+  "text_every": 6                // 1..40：每隔几枚便签显示下一条文字
+},
 "style": "glass",               // glass|cartoon
+"cards_enabled": true,          // false：蜂群之后不再飞入可读卡
+"cards_limit": 0,               // 0=全部；1..24=只播放列表前 N 只
+"auto_advance": true,           // false：播放完停留，轻触画面继续
 "cards": [
   { "title": "...", "body": "...", "emoji": "✨",
     "width": 400, "height": 236, "accent": "", "style": "", "image": "" }
@@ -141,6 +164,12 @@
 - 卡片宽 240..640，高 140..480；最多 24 只。
 - `total_duration_override_ms` 非空时，stagger 由总时长反算。
 - 同屏存活上限 12 是硬上限；超过 7 会给认知负荷警告。
+- 蜂群便签是轨迹描线特效（与终幕 confetti 同级），不占用「同屏玻璃卡」预算；`count ≤ 400` 为硬上限。
+- 蜂群会把轨迹自动收缩到刚好画满整条曲线（相邻步长 = `min(便签宽, 便签高) × (1 − overlap_pct/100)`），所以心形带总在内侧、可读卡环在外侧。`note_aspect` 决定便签高 = 宽 ÷ 比例，整条带共用同一个形状。
+- 蜂群颜色由独立的**糖果淡彩（candy pastel）**机制生成，不再继承可读卡色板：色相只在粉红/兰紫/长春花蓝/粉蓝/薄荷等锚点之间平滑行走，整体固定在 PCCS pale/light 淡色调（HSL 明度约 0.82–0.86、彩度 0.6–0.87），因此不会出现棕、灰、橄榄等低明度/低彩度色块（跨文化颜色偏好研究中排名最低的一段）。`base_hue` 选择色族（暖=粉→蓝、春=薄荷→粉、天=粉蓝→粉、紫=丁香→粉），`harmony` 选择跨度（邻近=单一色族 5–6 段、三角=粉/杏/柠檬/薄荷/蓝/紫、互补=粉蓝交替）。色带仍以轨迹垂直轴镜像，相邻便签色差 <3°，左右两瓣同色。`mode=single` 仍按指定单色渲染；`mode=palette` 只影响可读卡，不参与蜂群（若把自定义色板直接传给 `swarmRamp`，每个颜色也会被拉回淡彩带）。主题的 `tertiary` 作为约 4% 的强调色点缀（60/30/10 的 10% 原则），同样会被压回淡彩带。
+- 可读卡在窗口小于设计基准时会自动等比缩小，保留 ≥18px 的间距（含浮动幅度），避免窄屏/小窗口上相邻祝福卡重叠；大屏保持原尺寸。
+- `cards_limit` 只截取列表前缀，不会删除后面的卡片；`cards_enabled=false` 时列表仍会保存，随时可以重新打开。
+- `sequence.hold_after_ms` 只在 `auto_advance=true` 时生效；手动模式下播放完会停住，等待轻触（或空格 / 全局跳过键）。
 
 ### confirm（幕 4 · 收下祝福）
 
@@ -171,10 +200,15 @@
 },
 "wish": { "darken_ms": 520, "silence_ms": 2400,
           "reveal_text": "生日快乐", "reveal_duration_ms": 900 },
-"jelly": { "spring": 4.2, "damping": 0.42 }
+"jelly": { "spring": 4.2, "damping": 0.42 },
+"hint": "点亮蜡烛后，逐根点击吹灭",
+"interaction_hint": "拖动可旋转蛋糕 · 点击蛋糕会弹起来"   // ≤40 字；留空隐藏
 ```
 
 相机由 pitch（俯仰）与 distance 决定；蛋糕层从下到上排布，半径/高度单位是 QML 3D 世界单位。
+
+1.1.0 起：拖动可自由旋转蛋糕（±180° 回绕、带惯性、不自动回正）；点击蛋糕触发果冻弹跳，动画期间再点会叠加能量。`jelly.spring` / `jelly.damping` 映射到阻尼振子的 k/c。
+1.1.1 起：**只保留水平旋转**，竖向拖动不再改变俯仰角；便签支持文字（`swarm.text_block`），弹窗与便签统一为高亮琉璃质感。
 
 ### finale（幕 7 · 终幕）
 

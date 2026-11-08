@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Window
 import QtQuick.Controls
 import QtQuick.Dialogs
 import "components"
@@ -395,8 +396,13 @@ Item {
         timelineHeight = layout.timeline_height || 220
 
         var ps = app.previewSettings || ({})
-        previewResolution = ps.resolution || "1080p"
-        previewZoom = ps.zoom || 100
+        // Sanitize persisted values: a corrupted/legacy entry (e.g. zoom: 1)
+        // must never shrink the preview stage to an invisible dot.
+        previewResolution = ["1080p", "1440p", "4K"].indexOf(ps.resolution) >= 0 ? ps.resolution : "1080p"
+        var restoredZoom = parseInt(ps.zoom)
+        previewZoom = (restoredZoom >= 50 && restoredZoom <= 200) ? restoredZoom : 100
+        if (ps.resolution !== previewResolution || parseInt(ps.zoom) !== previewZoom)
+            editor.queuePreviewSave()   // self-heal the stored settings
         previewLowMotion = ps.reduced_motion === true
         previewHighContrast = false
         previewSlowmo = ps.slowmo === true
@@ -416,16 +422,46 @@ Item {
         if (app.devAutoplay)
             autoplayTimer.start()
 
-        var plan = app.startupPlan
-        if (plan.action === "recovery") {
-            recovery.opened = true
-        } else if (plan.action === "open") {
-            session.openProfile(plan.profileId)
-        } else if (library.profiles.length === 0) {
-            if (app.editorMode === "wizard")
-                wizard.opened = true
-            else
-                newDialog.opened = true
+        // V1.1.0 fix #1: opening a fullscreen modal (recovery / wizard /
+        // new-profile) during component completion — before the window has
+        // rendered its first frames — permanently breaks Qt Quick 3D
+        // compositing in this window on Qt 6.11 (the preview cake then never
+        // renders for the whole session). Defer the startup plan until the
+        // scene graph has settled.
+        startupPlanTimer.start()
+    }
+
+    // V1.1.0 fix #1 (robust arm): the startup plan may open a fullscreen
+    // modal (crash recovery / wizard / new-profile). Opening one before the
+    // window has rendered permanently breaks Qt Quick 3D compositing on
+    // Qt 6.11, so arm the timer only after the first real frame.
+    property bool sawFirstFrame: false
+    Connections {
+        // Resolve the attached window through the editor Item — a bare
+        // `Window.window` inside a non-Item Connections scope does not
+        // resolve (acceptance finding #1).
+        target: editor.Window.window
+        enabled: !editor.sawFirstFrame
+        function onAfterAnimating() {
+            editor.sawFirstFrame = true
+            startupPlanTimer.restart()
+        }
+    }
+    Timer {
+        id: startupPlanTimer
+        interval: 500
+        onTriggered: {
+            var plan = app.startupPlan
+            if (plan.action === "recovery") {
+                recovery.opened = true
+            } else if (plan.action === "open") {
+                session.openProfile(plan.profileId)
+            } else if (library.profiles.length === 0) {
+                if (app.editorMode === "wizard")
+                    wizard.opened = true
+                else
+                    newDialog.opened = true
+            }
         }
     }
 

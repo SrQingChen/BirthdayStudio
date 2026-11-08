@@ -144,6 +144,22 @@ class ColorTools(QObject):
     ) -> list[str]:
         return colors.harmony_palette(base_hue, mode, (s0, s1), (l0, l1), count)
 
+    @Slot(float, str, int, "QVariantList", str, result="QVariantList")
+    def swarmRamp(
+        self,
+        base_hue: float,
+        mode: str,
+        count: int,
+        palette: list,
+        accent: str,
+    ) -> list[str]:
+        """Candy-pastel colour ribbon for the note swarm."""
+        pal = [str(c) for c in palette if c] if palette else []
+        try:
+            return colors.swarm_palette(base_hue, mode, count, pal, accent, 24)
+        except (ValueError, TypeError):
+            return colors.harmony_palette(base_hue, mode, (0.52, 0.68), (0.74, 0.84), count)
+
     @Slot(str, result=float)
     def luminance(self, color: str) -> float:
         try:

@@ -19,6 +19,13 @@ Item {
     property var outFlags: []
     property int litCount: 0
     property bool entered: false
+    // V1.1.0 fix #3c: same damped-oscillator jelly as the 3D stage so rapid
+    // taps stack (a plain SequentialAnimation.start() is a no-op mid-run).
+    property real jellyX: 0
+    property real jellyV: 0
+    readonly property var jellyCfg: (profile.acts && profile.acts.cake && profile.acts.cake.jelly) ? profile.acts.cake.jelly : ({})
+    readonly property real jellyK: (jellyCfg.spring || 4.2) * 14
+    readonly property real jellyC: (jellyCfg.damping || 0.42) * 6
 
     readonly property var cakeCfg: (profile.acts && profile.acts.cake && profile.acts.cake.cake) ? profile.acts.cake.cake : ({})
     readonly property var candleCfg: (profile.acts && profile.acts.cake && profile.acts.cake.candles) ? profile.acts.cake.candles : ({})
@@ -35,10 +42,14 @@ Item {
     }
 
     function resetAll() {
+        entrance.stop()
         entered = false
         resetCandles()
         group.scale = 0.94
         group.opacity = 0
+        root.jellyX = 0
+        root.jellyV = 0
+        jellyAnim.running = false
     }
 
     function blowOut(index) {
@@ -66,7 +77,14 @@ Item {
     function jelly() {
         if (reducedMotion)
             return
-        jellyDown.start()
+        if (entrance.running) {
+            entrance.stop()
+            group.opacity = 1
+            group.scale = 1
+            jellyX = 0
+        }
+        jellyV = Math.min(8, jellyV + 2.0)
+        jellyAnim.running = true
     }
 
     onOutFlagsChanged: litCount = candleCount - outFlags.filter(function (v) { return v }).length
@@ -171,8 +189,13 @@ Item {
                 }
 
                 MouseArea {
+                    // Cover the stick AND the flame above it (the flame is a
+                    // sibling anchored to this item's top edge, outside any
+                    // hit area — taps on the flame tip fell through to the
+                    // cake jelly below). Same F-22 gap fixed in Cake3DStage.
                     anchors.fill: parent
                     anchors.margins: -8
+                    anchors.topMargin: -8 - flame.height
                     enabled: !candle.isOut
                     cursorShape: Qt.PointingHandCursor
                     onClicked: root.blowOut(index)
@@ -195,18 +218,21 @@ Item {
         }
     }
 
-    SequentialAnimation {
-        id: jellyDown
-        ParallelAnimation {
-            NumberAnimation { target: group; property: "scale"; to: 1.04; duration: 90 }
-        }
-        SpringAnimation {
-            target: group
-            property: "scale"
-            to: 1
-            spring: (root.profile.acts && root.profile.acts.cake && root.profile.acts.cake.jelly) ? (root.profile.acts.cake.jelly.spring || 4.2) : 4.2
-            damping: (root.profile.acts && root.profile.acts.cake && root.profile.acts.cake.jelly) ? (root.profile.acts.cake.jelly.damping || 0.42) : 0.42
-            epsilon: 0.005
+    // V1.1.0 fix #3c: replaces jellyDown above as the live jelly driver.
+    FrameAnimation {
+        id: jellyAnim
+        running: false
+        onCurrentFrameChanged: {
+            var step = Math.min(frameTime, 1 / 30)   // frameTime is in seconds on this Qt build
+            root.jellyV += (-root.jellyK * root.jellyX - root.jellyC * root.jellyV) * step
+            root.jellyX = Math.max(-0.32, Math.min(0.32, root.jellyX + root.jellyV * step))
+            group.scale = 1 - root.jellyX
+            if (Math.abs(root.jellyX) < 0.008 && Math.abs(root.jellyV) < 0.10) {
+                root.jellyX = 0
+                root.jellyV = 0
+                group.scale = 1
+                jellyAnim.running = false
+            }
         }
     }
 }

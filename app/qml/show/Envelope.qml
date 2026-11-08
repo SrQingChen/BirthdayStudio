@@ -191,17 +191,6 @@ Item {
                 }
             }
 
-            // opening flap (drawn after crack; folds up)
-            Canvas {
-                id: flapInner
-                anchors.fill: parent
-                readonly property real t: flapAnim.running ? flapFold.scaleY : 1
-                visible: false
-                onPaint: {
-                    var ctx = getContext("2d")
-                    ctx.clearRect(0, 0, width, height)
-                }
-            }
         }
 
         // seal assembly

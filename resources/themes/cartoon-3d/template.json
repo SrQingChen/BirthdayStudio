@@ -36,10 +36,10 @@
       "style": "cartoon",
       "color_strategy": {
         "mode": "harmony",
-        "harmony": "triadic",
-        "base_hue": 10,
-        "saturation_bucket": [0.58, 0.78],
-        "lightness_bucket": [0.72, 0.86]
+        "harmony": "analogous",
+        "base_hue": 20,
+        "saturation_bucket": [0.52, 0.68],
+        "lightness_bucket": [0.70, 0.82]
       }
     },
     "confirm": { "style": "cartoon" },

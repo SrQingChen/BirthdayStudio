@@ -130,8 +130,8 @@ ModalLayer {
                             anchors.verticalCenter: parent.verticalCenter
                             checked: modelData.enabled
                             enabled: modelData.compatible
-                            onToggled: {
-                                plugins.setEnabled(modelData.id, checked)
+                            onToggled: function (value) {
+                                plugins.setEnabled(modelData.id, value)
                                 root.syncProfile()
                             }
                         }

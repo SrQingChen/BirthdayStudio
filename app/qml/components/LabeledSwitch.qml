@@ -21,6 +21,6 @@ Row {
     EdSwitch {
         anchors.verticalCenter: parent.verticalCenter
         checked: root.on
-        onToggled: root.toggled(checked)
+        onToggled: function (value) { root.toggled(value) }
     }
 }

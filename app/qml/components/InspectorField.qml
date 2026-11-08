@@ -16,6 +16,9 @@ Column {
     property string unit: ""
     property string assetKind: ""
     property string hint: ""
+    // Combo values arrive as strings; use "int" when the schema field is an
+    // integer (e.g. cards_limit) so the draft stays JSON-typed.
+    property string coerce: ""
     property bool compact: false
 
     readonly property var current: readPath(session.draft, path)
@@ -27,6 +30,7 @@ Column {
     readonly property color dangerColor: (theme.tokens && theme.tokens.ui && theme.tokens.ui.danger) ? theme.tokens.ui.danger : "#ff8a80"
     readonly property color warnColor: "#ffd166"
     readonly property color muted: (theme.tokens && theme.tokens.ui && theme.tokens.ui.textMuted) ? theme.tokens.ui.textMuted : "#b9a9b6"
+    readonly property bool dark: !theme.tokens || !theme.tokens.ui || theme.tokens.ui.mode !== "light"
 
     width: parent ? parent.width : 300
     spacing: 4
@@ -60,6 +64,11 @@ Column {
     function writeValue(v) {
         if (path)
             session.setField(path, v)
+    }
+
+    function writeInt(v) {
+        if (path)
+            session.setIntField(path, v)
     }
 
     Row {
@@ -150,6 +159,7 @@ Column {
                 visible: root.type === "slider"
                 spacing: 8
                 EdSlider {
+                    id: sliderControl
                     width: parent.width - valueText.width - 8
                     anchors.verticalCenter: parent.verticalCenter
                     from: root.min
@@ -174,7 +184,7 @@ Column {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: root.type === "switch"
                 checked: root.current === true
-                onToggled: root.writeValue(checked)
+                onToggled: function (value) { root.writeValue(value) }
             }
 
             EdColor {
@@ -190,7 +200,12 @@ Column {
                 visible: root.type === "combo"
                 value: root.current === undefined ? "" : String(root.current)
                 options: root.options
-                onPicked: function (v) { root.writeValue(v) }
+                onPicked: function (v) {
+                    if (root.coerce === "int")
+                        root.writeInt(parseInt(v) || 0)
+                    else
+                        root.writeValue(v)
+                }
             }
 
             Row {
@@ -230,14 +245,24 @@ Column {
             }
         }
 
-        Text {
-            width: 14
+        Item {
+            width: 20
             height: 34
-            text: "↺"
-            color: resetArea.containsMouse ? root.muted : Qt.rgba(0.7, 0.7, 0.7, 0.35)
-            font.pixelSize: 13
-            verticalAlignment: Text.AlignVCenter
-            horizontalAlignment: Text.AlignHCenter
+            Rectangle {
+                anchors.centerIn: parent
+                width: 20
+                height: 20
+                radius: 10
+                color: resetArea.containsMouse ? (root.dark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.07)) : "transparent"
+                Behavior on color { ColorAnimation { duration: 110 } }
+            }
+            Text {
+                anchors.centerIn: parent
+                text: "↺"
+                color: resetArea.containsMouse ? root.muted : Qt.rgba(0.7, 0.7, 0.7, 0.35)
+                font.pixelSize: 13
+                Behavior on color { ColorAnimation { duration: 110 } }
+            }
             MouseArea {
                 id: resetArea
                 anchors.fill: parent
@@ -245,6 +270,9 @@ Column {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: session.resetField(root.path)
             }
+            ToolTip.visible: resetArea.containsMouse
+            ToolTip.text: "恢复默认值"
+            ToolTip.delay: 500
         }
     }
 
@@ -264,7 +292,7 @@ Column {
         visible: root.hint !== "" && root.msg === ""
         text: root.hint
         color: root.muted
-        opacity: 0.7
+        opacity: 0.88
         font.family: theme.hanFamily
         font.pixelSize: 11
         wrapMode: Text.Wrap
@@ -289,6 +317,12 @@ Column {
                 textInput.text = root.current === undefined ? "" : String(root.current)
             if (!areaInput.activeFocus && root.type === "textarea")
                 areaInput.text = root.current === undefined ? "" : String(root.current)
+            if (!numberInput.activeFocus)
+                numberInput.text = root.current === undefined ? "" : String(root.current)
+            // Slider/TextField destroy their bindings on first user edit;
+            // re-sync from the draft so reset/undo/JSON edits are reflected.
+            if (!sliderControl.pressed)
+                sliderControl.value = root.current === undefined ? root.min : Number(root.current)
         }
     }
 }

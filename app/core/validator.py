@@ -192,11 +192,26 @@ def validate_profile(
 
     # Popup card contrast: text sits on a tinted glass surface.
     popups = profile.acts.popups
+    # Only cards that actually reach the stage are audited: the card layer can
+    # be switched off and `cards_limit` caps the visible prefix of the list.
+    visible_cards = popups.cards if popups.cards_enabled else []
+    if popups.cards_limit > 0:
+        visible_cards = visible_cards[: popups.cards_limit]
+    if popups.enabled and not visible_cards and not popups.swarm.enabled:
+        report.issues.append(
+            Issue(
+                "warning",
+                "acts.popups",
+                "祝福幕没有可显示内容（卡片与蜂群都已关闭），播放时会被直接跳过。",
+                "content",
+                "popups",
+            )
+        )
     if popups.enabled and palette:
         on_surface = palette.get("on-surface", "#ffffff")
         surface = palette.get("surface", "#1b1220")
         card_alpha = (tokens or {}).get("glass", {}).get("cardTintAlpha", 0.16)
-        for idx, card in enumerate(popups.cards):
+        for idx, card in enumerate(visible_cards):
             base = card.accent or palette.get("primary", "#ffb08a")
             card_bg = colors.blend(base, surface, min(0.55, card_alpha + 0.16))
             ratio = colors.contrast_ratio(on_surface, card_bg)
@@ -261,7 +276,7 @@ def validate_profile(
     for path in profile.referenced_assets():
         if resolve_asset(path, profile_dir) is None:
             report.issues.append(Issue("error", "assets", f"引用的资源不存在：{path}", "asset.missing"))
-    for idx, card in enumerate(profile.acts.popups.cards):
+    for idx, card in enumerate(visible_cards):
         if card.image and resolve_asset(card.image, profile_dir) is None:
             report.issues.append(
                 Issue(
@@ -292,7 +307,7 @@ def validate_profile(
         report.issues.append(
             Issue("error", "acts.confirm", "确认按钮小于 44×44px 主目标尺寸。", "target", "confirm")
         )
-    for idx, card in enumerate(profile.acts.popups.cards):
+    for idx, card in enumerate(visible_cards):
         if card.width < 24 or card.height < 24:
             report.issues.append(
                 Issue("error", f"acts.popups.cards[{idx}]", "弹窗尺寸小于 24×24px。", "target", "popups")
@@ -300,7 +315,12 @@ def validate_profile(
 
     # ---- timing sanity ----------------------------------------------------- #
     seq = popups.sequence
-    total_ms = seq.start_delay_ms + max(0, len(popups.cards) - 1) * seq.stagger_ms
+    swarm = popups.swarm
+    # NOTE: the QML runtime raises the stagger to >=30ms under reduced motion,
+    # roughly doubling the swarm time; the lint reports the configured value.
+    swarm_ms = swarm.count * swarm.stagger_ms + swarm.fade_in_ms if swarm.enabled else 0
+    cards_delay_ms = swarm_ms if (swarm.enabled and swarm.cards_delay_after) else 0
+    total_ms = seq.start_delay_ms + cards_delay_ms + max(0, len(visible_cards) - 1) * seq.stagger_ms
     if total_ms > 12000:
         report.issues.append(
             Issue(
@@ -311,7 +331,7 @@ def validate_profile(
                 "popups",
             )
         )
-    if seq.max_living > 7:
+    if visible_cards and seq.max_living > 7:
         report.issues.append(
             Issue(
                 "warning",

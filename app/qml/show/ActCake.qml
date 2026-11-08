@@ -26,6 +26,10 @@ Item {
     readonly property string revealText: wish.reveal_text || "生日快乐"
     readonly property int revealMs: wish.reveal_duration_ms || 900
     readonly property string hintText: cakeCfg.hint || "点亮蜡烛后，逐根点击吹灭"
+    // V1.1.0 fix #4: an always-visible affordance line for the free rotation
+    // and the tap-to-jelly interactions.
+    readonly property string interactionHint: cakeCfg.interaction_hint !== undefined
+        ? cakeCfg.interaction_hint : "拖动可旋转蛋糕 · 点击蛋糕会弹起来"
 
     property bool started: false
     property bool allOut: false
@@ -86,7 +90,7 @@ Item {
         revealGroup.scale = 1
         revealed = true
         done = true
-        completed()
+        actFinished()
     }
 
     // darkening + wish
@@ -172,23 +176,28 @@ Item {
         anchors.bottom: parent.bottom
         anchors.bottomMargin: Math.max(34, parent.height * 0.05)
         width: parent.width * 0.8
-        height: 68
+        height: hintColumn.implicitHeight + 24
 
         Rectangle {
             anchors.centerIn: parent
-            width: Math.min(parent.width, 470)
-            height: 64
-            radius: 32
+            width: Math.min(parent.width, 500)
+            height: hintColumn.implicitHeight + 20
+            radius: 30
             color: Qt.rgba(0.05, 0.03, 0.08, 0.55)
             border.width: 1
             border.color: Qt.rgba(1, 1, 1, 0.14)
         }
 
         Column {
+            id: hintColumn
             anchors.centerIn: parent
-            spacing: 8
+            width: Math.min(parent.width, 500) - 36
+            spacing: 7
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
+                width: parent.width
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.NoWrap
                 text: root.micEnabled && showBridge.micAvailable
                       ? "对着麦克风吹气，或逐根点击蜡烛"
                       : root.hintText
@@ -196,6 +205,15 @@ Item {
                 font.family: theme.hanFamily
                 font.pixelSize: 18
                 opacity: 0.86
+            }
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                visible: root.interactionHint !== ""
+                text: root.interactionHint
+                color: "#ffe9df"
+                font.family: theme.hanFamily
+                font.pixelSize: 13
+                opacity: 0.55
             }
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter

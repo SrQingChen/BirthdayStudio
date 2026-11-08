@@ -343,6 +343,11 @@ class SessionBridge(QObject):
         self.previewChanged.emit()
         self.issuesChanged.emit()
 
+    @Slot(str, int)
+    def setIntField(self, path: str, value: int) -> None:
+        """Combo selections arrive as JS numbers (doubles); keep int fields int."""
+        self.setField(path, int(value))
+
     @Slot("QVariantMap")
     def setFields(self, fields: dict[str, Any]) -> None:
         if not self._draft:

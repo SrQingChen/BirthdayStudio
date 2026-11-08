@@ -4,8 +4,10 @@ import QtQuick.Controls
 Slider {
     id: root
 
-    property color accentColor: (theme.tokens && theme.tokens.ui && theme.tokens.ui.accent) ? theme.tokens.ui.accent : "#ffb08a"
-    property color trackColor: Qt.rgba(1, 1, 1, 0.16)
+    readonly property var ui: (theme.tokens && theme.tokens.ui) ? theme.tokens.ui : ({})
+    readonly property bool dark: !ui || ui.mode !== "light"
+    property color accentColor: ui.accent || "#ffb08a"
+    property color trackColor: root.dark ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(0, 0, 0, 0.14)
 
     implicitHeight: 24
     leftPadding: 0
@@ -36,6 +38,6 @@ Slider {
         radius: 7
         color: "#fff5ee"
         border.width: 1
-        border.color: Qt.rgba(0, 0, 0, 0.22)
+        border.color: Qt.rgba(0, 0, 0, root.dark ? 0.22 : 0.32)
     }
 }

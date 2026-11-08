@@ -44,10 +44,37 @@ Item {
                 case "intro": dur = 3.2; break
                 case "wax": dur = Math.max(4, (cfg.letter && cfg.letter.text ? cfg.letter.text.length / Math.max(6, cfg.letter.chars_per_second || 24) : 5) + 2.2); break
                 case "popups": {
-                    var n = (cfg.cards || []).length
+                    var allCards = cfg.cards || []
+                    var n = allCards.length
+                    // Match the runtime: the card layer can be switched off,
+                    // and `cards_limit` caps the first N configured cards.
+                    if (cfg.cards_enabled === false)
+                        n = 0
+                    else if (cfg.cards_limit > 0)
+                        n = Math.min(n, cfg.cards_limit)
                     var st = (cfg.sequence && cfg.sequence.stagger_ms) || 60
-                    var hold = (cfg.sequence && cfg.sequence.hold_after_ms) || 3800
-                    dur = ((cfg.sequence && cfg.sequence.start_delay_ms) || 260) / 1000 + (n * st) / 1000 + hold / 1000
+                    var delay = (cfg.sequence && cfg.sequence.start_delay_ms) || 260
+                    var auto = cfg.auto_advance !== false
+                    var hold = auto ? ((cfg.sequence && cfg.sequence.hold_after_ms) || 3800) : 0
+                    var sw = cfg.swarm || {}
+                    var cardsS = n > 0 ? delay / 1000 + Math.max(0, n - 1) * st / 1000 + hold / 1000 : 0
+                    var swarmS = 0
+                    if (sw.enabled !== false) {
+                        // Low-motion mode raises the stagger to >=30ms at runtime.
+                        var swSt = Math.max(4, Math.min(60, sw.stagger_ms !== undefined ? sw.stagger_ms : 14))
+                        swarmS = ((sw.count !== undefined ? sw.count : 320) * swSt
+                                  + (sw.fade_in_ms !== undefined ? sw.fade_in_ms : 120)) / 1000
+                    }
+                    if (n === 0 && sw.enabled === false)
+                        dur = auto ? 0.4 : 0
+                    else if (n === 0)
+                        dur = swarmS + hold / 1000
+                    else if (sw.enabled === false)
+                        dur = cardsS
+                    else if (sw.cards_delay_after === false)
+                        dur = Math.max(swarmS, cardsS)
+                    else
+                        dur = swarmS + cardsS
                     break
                 }
                 case "confirm": dur = 2.6; break
@@ -290,7 +317,7 @@ Item {
     function popupDots() {
         var out = []
         var popups = actsCfg.popups
-        if (!popups || popups.enabled === false)
+        if (!popups || popups.enabled === false || popups.cards_enabled === false)
             return out
         var lane = null
         for (var i = 0; i < lanes.lanes.length; i++) {
@@ -300,12 +327,20 @@ Item {
         if (!lane)
             return out
         var n = (popups.cards || []).length
+        if (popups.cards_limit > 0)
+            n = Math.min(n, popups.cards_limit)
         var st = (popups.sequence && popups.sequence.stagger_ms) || 60
         var delay = (popups.sequence && popups.sequence.start_delay_ms) || 260
+        var sw = popups.swarm || {}
+        var swarmLead = 0
+        if (sw.enabled !== false && sw.cards_delay_after !== false)
+            swarmLead = ((sw.count !== undefined ? sw.count : 320)
+                         * Math.max(4, Math.min(60, sw.stagger_ms !== undefined ? sw.stagger_ms : 14))
+                         + (sw.fade_in_ms !== undefined ? sw.fade_in_ms : 120)) / 1000
         var cs = (popups.color_strategy && popups.color_strategy.single_color) || null
         for (var k = 0; k < n; k++) {
             out.push({
-                t: lane.start + (delay + k * st) / 1000,
+                t: lane.start + swarmLead + (delay + k * st) / 1000,
                 i: k,
                 color: colors[(k + 2) % colors.length]
             })

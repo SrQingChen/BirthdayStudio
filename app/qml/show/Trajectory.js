@@ -114,6 +114,108 @@ function generate(preset, count, customPoints, span) {
     }
 }
 
+// ------------------------------------------------------------------ //
+// Dense arc-length sampling for the note swarm (V1.1.0 fix #5): a few
+// hundred points spaced evenly ALONG the curve so heavily-overlapping
+// sticky notes trace it as one continuous band.
+// ------------------------------------------------------------------ //
+
+function denseSampler(preset, span, customPoints) {
+    // Returns f(t) -> {x, y} with t in [0,1), normalised around the stage
+    // centre and scaled by span. Ordered for a pleasing single-stroke draw.
+    var s = span || 0.72
+    switch (preset) {
+    case "circle":
+        return function (t) {
+            var a = -Math.PI / 2 + t * Math.PI * 2
+            return { x: 0.5 + Math.cos(a) * 0.36 * s, y: 0.5 + Math.sin(a) * 0.30 * s }
+        }
+    case "spiral":
+        return function (t) {
+            var a = t * Math.PI * 2.6
+            var r = (0.09 + t * 0.31) * s
+            return { x: 0.5 + Math.cos(a) * r, y: 0.52 + Math.sin(a) * r * 0.84 }
+        }
+    case "wave":
+        return function (t) {
+            return { x: 0.5 + (t - 0.5) * 0.78 * s, y: 0.5 + Math.sin(t * Math.PI * 3.0) * 0.15 * s }
+        }
+    case "arc":
+        return function (t) {
+            var a = Math.PI - t * Math.PI
+            return { x: 0.5 + Math.cos(a) * 0.40 * s, y: 0.58 - Math.sin(a) * 0.30 * s }
+        }
+    case "diagonal":
+    case "line":
+        return function (t) {
+            return { x: 0.30 + t * 0.42 * s, y: 0.72 - t * 0.42 * s }
+        }
+    case "custom":
+        // Hand-drawn trajectory (editor TrajectoryDialog): walk the
+        // control polyline so the swarm traces the user's own curve.
+        var cps = (customPoints && customPoints.length >= 2) ? customPoints : [[0.3, 0.72], [0.72, 0.3]]
+        return function (t) {
+            var scaled = t * (cps.length - 1)
+            var idx = Math.min(cps.length - 2, Math.floor(scaled))
+            var local = scaled - idx
+            var a = cps[idx]
+            var b = cps[idx + 1]
+            return {
+                x: 0.5 + ((a[0] + (b[0] - a[0]) * local) - 0.5) * s,
+                y: 0.5 + ((a[1] + (b[1] - a[1]) * local) - 0.5) * s
+            }
+        }
+    default:
+        // heart: parametric curve starting at the bottom tip, sweeping up the
+        // left lobe, over the notch, down the right lobe and back to the tip.
+        // heartPoint() returns raw coords (x in ±0.94, y in -0.70..1.0); we
+        // re-centre to 0.5 and scale like the sparse heart() preset. The
+        // dense band (span auto-shrunk for full coverage) sits inside the
+        // readable cards' ring — concentric composition, by design.
+        return function (t) {
+            var a = Math.PI + t * Math.PI * 2
+            var p = heartPoint(a)
+            return { x: 0.5 + p.x * 0.33 * s, y: 0.5 + (p.y - 0.355) * 0.33 * s }
+        }
+    }
+}
+
+function dense(preset, count, span, customPoints) {
+    if (count <= 0)
+        return []
+    var f = denseSampler(preset, span, customPoints)
+    // Build a lookup of cumulative arc length, then resample uniformly.
+    var STEPS = Math.max(240, count * 8)
+    var pts = []
+    var cum = [0]
+    for (var i = 0; i <= STEPS; i++) {
+        pts.push(f(i / STEPS))
+        if (i > 0) {
+            var dx = pts[i].x - pts[i - 1].x
+            var dy = pts[i].y - pts[i - 1].y
+            cum.push(cum[i - 1] + Math.sqrt(dx * dx + dy * dy))
+        }
+    }
+    var total = cum[STEPS]
+    if (total <= 0)
+        return []
+    var out = []
+    var target = 0
+    var j = 0
+    for (var k = 0; k < count; k++) {
+        target = total * k / count
+        while (j < STEPS && cum[j + 1] < target)
+            j++
+        var seg = cum[j + 1] - cum[j]
+        var local = seg > 0 ? (target - cum[j]) / seg : 0
+        out.push({
+            x: pts[j].x + (pts[j + 1].x - pts[j].x) * local,
+            y: pts[j].y + (pts[j + 1].y - pts[j].y) * local
+        })
+    }
+    return out
+}
+
 // Clamp a card centre so the whole card stays inside the stage with margins.
 function clampPoint(p, cardW, cardH, stageW, stageH, margin) {
     var m = margin === undefined ? 18 : margin
