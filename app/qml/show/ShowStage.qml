@@ -105,7 +105,22 @@ Item {
     }
 
     function stopBgm() {
-        showBridge.stopBgm(800)
+        var audio = profile && profile.global ? profile.global.audio : ({})
+        var fade = audio && audio.bgm && audio.bgm.fade_out_ms !== undefined ? audio.bgm.fade_out_ms : 800
+        showBridge.stopBgm(fade)
+    }
+
+    function playVoice() {
+        var audio = profile && profile.global ? profile.global.audio : ({})
+        var voice = audio && audio.voice ? audio.voice : ({})
+        if (!voice.path)
+            return
+        showBridge.setDucking(audio.ducking_enabled !== false)
+        showBridge.playVoice(voice.path, voice.volume_pct !== undefined ? voice.volume_pct : 85, true)
+    }
+
+    function stopVoice() {
+        showBridge.stopVoice()
     }
 
     function start(fromAct) {
@@ -152,6 +167,7 @@ Item {
         actIndex = -1
         started = false
         running = false
+        showBridge.stopVoice()
     }
 
     function stop() {
@@ -270,6 +286,7 @@ Item {
 
     function finishShow() {
         running = false
+        stopVoice()
         finished()
     }
 
@@ -625,6 +642,7 @@ Item {
             speedScale: stage.speedScale
             onActFinished: stage.advance()
             onSfx: function (kind) { stage.playSfx(kind) }
+            onVoiceRequested: stage.playVoice()
         }
     }
 
@@ -695,5 +713,6 @@ Item {
     Component.onDestruction: {
         if (running)
             stopBgm()
+        stopVoice()
     }
 }

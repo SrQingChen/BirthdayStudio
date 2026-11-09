@@ -19,6 +19,7 @@ class ShowBridge(QObject):
     replayRequested = Signal()
     toast = Signal(str)
     micChanged = Signal()
+    voiceChanged = Signal()
     pluginIdsChanged = Signal()
     pluginRevisionChanged = Signal()
     profileDirChanged = Signal()
@@ -33,6 +34,7 @@ class ShowBridge(QObject):
         self.mic = MicMonitor(self)
         self.mic.levelChanged.connect(lambda _v: self.micChanged.emit())
         self.mic.availabilityChanged.connect(lambda _a, _m: self.micChanged.emit())
+        self.audio.voiceChanged.connect(self.voiceChanged.emit)
 
     # ------------------------------------------------------------------ #
     @Property(str, notify=profileDirChanged)
@@ -106,6 +108,18 @@ class ShowBridge(QObject):
     @Slot(int)
     def stopBgm(self, fade_ms: int = 700) -> None:
         self.audio.stop_bgm(fade_ms)
+
+    @Slot(str, int, bool)
+    def playVoice(self, path: str, volume_pct: int, duck: bool) -> None:
+        self.audio.play_voice(path, volume_pct, duck, self._profile_dir)
+
+    @Slot()
+    def stopVoice(self) -> None:
+        self.audio.stop_voice(200)
+
+    @Property(bool, notify=voiceChanged)
+    def voicePlaying(self) -> bool:
+        return self.audio.voice_playing
 
     @Slot(bool)
     def duck(self, active: bool) -> None:

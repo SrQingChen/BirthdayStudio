@@ -266,6 +266,16 @@ def validate_profile(
         report.issues.append(
             Issue("error", "global.audio.bgm.path", f"背景音乐文件不存在：{audio.bgm.path}", "asset.missing")
         )
+    voice_path = audio.voice.path
+    if voice_path and resolve_asset(voice_path, profile_dir) is None:
+        report.issues.append(
+            Issue(
+                "error",
+                "global.audio.voice.path",
+                f"祝福语音文件不存在：{voice_path}",
+                "asset.missing",
+            )
+        )
 
     # ---- assets ------------------------------------------------------------ #
     for asset in profile.assets:
@@ -274,6 +284,8 @@ def validate_profile(
                 Issue("error", f"assets.{asset.id}", f"资源缺失：{asset.filename}", "asset.missing")
             )
     for path in profile.referenced_assets():
+        if voice_path and path == voice_path:
+            continue  # the specific error above is clearer
         if resolve_asset(path, profile_dir) is None:
             report.issues.append(Issue("error", "assets", f"引用的资源不存在：{path}", "asset.missing"))
     for idx, card in enumerate(visible_cards):

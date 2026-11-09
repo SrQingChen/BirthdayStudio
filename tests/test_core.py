@@ -14,7 +14,7 @@ os.environ["BIRTHDAY_STUDIO_HOME"] = HOME
 
 from app.config import defaults  # noqa: E402
 from app.config.migrations import migrate  # noqa: E402
-from app.config.schema import Profile  # noqa: E402
+from app.config.schema import AssetRef, Profile  # noqa: E402
 from app.core import colors  # noqa: E402
 from app.core.exporter import ExportOptions, Exporter  # noqa: E402
 from app.core.plugin_manager import PluginManager, version_in_range  # noqa: E402
@@ -39,6 +39,11 @@ class SchemaTests(unittest.TestCase):
         self.assertTrue(profile.acts.popups.swarm.enabled)
         self.assertEqual(profile.acts.popups.swarm.count, 320)
         self.assertTrue(profile.acts.popups.swarm.cards_delay_after)
+
+    def test_voice_defaults(self):
+        voice = defaults.create_profile().global_.audio.voice
+        self.assertEqual(voice.path, "")
+        self.assertEqual(voice.volume_pct, 85)
 
     def test_cartoon_theme_uses_warm_analogous_harmony(self):
         # The old triadic set (orange/green/blue-violet) fought the cream
@@ -207,6 +212,17 @@ class ValidationTests(unittest.TestCase):
         report = validate_profile(data)
         self.assertTrue(any(i.code == "audio.volume" for i in report.warnings))
 
+    def test_missing_voice_is_an_error(self):
+        data = defaults.create_profile().dump()
+        self.assertTrue(validate_profile(data).ok)
+
+        data["global"]["audio"]["voice"]["path"] = "assets/missing_voice.wav"
+        report = validate_profile(data)
+        self.assertFalse(report.ok)
+        voice_errors = [i for i in report.errors if i.path == "global.audio.voice.path"]
+        self.assertEqual(len(voice_errors), 1)
+        self.assertEqual(voice_errors[0].code, "asset.missing")
+
 
 class ColorTests(unittest.TestCase):
     def test_swarm_ramp_is_pastel_pink_to_blue(self):
@@ -286,6 +302,27 @@ class ExporterTests(unittest.TestCase):
         self.assertTrue((package / "LICENSES" / "SOURCE.txt").exists())
         self.assertTrue((package / "启动演出.bat").exists())
         self.assertTrue(Path(result["zipPath"]).exists())
+
+    def test_voice_asset_is_packaged(self):
+        store = ProfileStore()
+        profile = store.create(theme_id="glass-celebration", honoree="语音", name="语音导出")
+        source = Path(__file__).resolve().parents[1] / "resources" / "audio" / "sfx_chime.wav"
+        asset = store.import_asset(profile.id, source, kind="audio", license_type="CC0")
+        profile.assets.append(AssetRef(**asset))
+        profile.global_.audio.voice.path = f"assets/{asset['filename']}"
+        store.save(profile)
+
+        pm = PluginManager([])
+        pm.scan()
+        exporter = Exporter(store, pm)
+        result = exporter.export(
+            profile,
+            Path(HOME) / "export_voice",
+            ExportOptions(exe_name="语音导出", copyright_confirmed=True),
+        )
+        self.assertTrue(result["ok"])
+        package = Path(result["packageDir"])
+        self.assertTrue((package / "profile" / "assets" / asset["filename"]).exists())
 
 
 def tearDownModule():

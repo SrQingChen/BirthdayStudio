@@ -52,7 +52,8 @@
     "bgm": { "path": "audio/bgm_celebration.wav", "volume_pct": 50, "loop": true,
              "fade_in_ms": 600, "fade_out_ms": 800 },
     "sfx_volume_pct": 60,
-    "ducking_enabled": true
+    "ducking_enabled": true,
+    "voice": { "path": "", "volume_pct": 85 }   // 祝福语音：火漆碎裂时播放一次
   },
   "motion": { "reduced_motion": "auto", "speed_scale": 1.0 },   // auto|on|off；0.25..2
   "environment": { "mode": "dark", "ambient_brightness": 1.0 }, // dark|light|auto
@@ -65,6 +66,8 @@
 ```
 
 资源路径规则：`assets/...` → 配置档目录；`audio/...`、`textures/...` → 内置资源；绝对路径直接使用。
+
+祝福语音（`global.audio.voice`）：`path` 留空表示不播放；文件通过编辑器「音频」页签上传后存为 `assets/<hash>_<name>`。语音在火漆碎裂瞬间播放一次、不循环；播放期间 BGM 自动压低约 10.5 dB，`EndOfMedia` 后自动恢复。关闭 `ducking_enabled` 可取消压低。
 
 ## 4. acts
 

@@ -64,6 +64,9 @@ class _Deck:
         self.player.play()
 
     def fade_to(self, target: float, ms: int, *, stop_when_done: bool = False) -> None:
+        if stop_when_done:
+            # Fade from the level we are actually at, then stop for real.
+            self.base = max(self.base, self.gain)
         self.target = target
         self.fade_ms = max(CLICK_GUARD_MS, ms)
         self.fading = True
@@ -80,15 +83,17 @@ class _Deck:
     def tick(self, dt: float) -> None:
         if self.crossfade_role:
             self.crossfade_progress = min(1.0, self.crossfade_progress + dt / max(1, self.fade_ms))
-            if self.crossfade_role == "out":
-                self.gain = self.base * math.cos(self.crossfade_progress * math.pi / 2)
-            else:
+            if self.crossfade_role == "in":
                 self.gain = self.base * math.sin(self.crossfade_progress * math.pi / 2)
+            else:  # "out" and "stop" both fade down to zero
+                self.gain = self.base * math.cos(self.crossfade_progress * math.pi / 2)
             if self.crossfade_progress >= 1.0:
-                if self.crossfade_role == "out":
+                if self.crossfade_role in ("out", "stop"):
                     self.player.stop()
                     self.gain = 0.0
                     self.base = 0.0
+                    self.target = 0.0
+                    self.fading = False
                 self.crossfade_role = None
             return
         if not self.fading:
@@ -113,6 +118,7 @@ class AudioEngine(QObject):
     volumeChanged = Signal()
     mutedChanged = Signal()
     playingChanged = Signal()
+    voiceChanged = Signal()
     positionChanged = Signal(float, float)  # seconds, duration
     errorOccurred = Signal(str)
     sfxPlayed = Signal(str)
@@ -120,6 +126,11 @@ class AudioEngine(QObject):
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self.decks = [_Deck(self), _Deck(self)]
+        # Spoken blessing: one dedicated player, kept OUT of self.decks so it
+        # never crossfades and is never multiplied by duck_current.
+        self.voice = _Deck(self)
+        self._voice_ducked = False
+        self.voice.player.mediaStatusChanged.connect(self._voice_status)
         self.active = 0
         self.master_pct = 50
         self.sfx_pct = 60
@@ -156,9 +167,14 @@ class AudioEngine(QObject):
     def bgm_playing(self) -> bool:
         return any(d.playing for d in self.decks)
 
+    @property
+    def voice_playing(self) -> bool:
+        return self.voice.playing
+
     def _apply_outputs(self) -> None:
         for d in self.decks:
             d.output.setVolume(max(0.0, min(1.0, d.gain * self.master_gain * self.duck_current)))
+        self.voice.output.setVolume(max(0.0, min(1.0, self.voice.gain * self.master_gain)))
         for eff in self._sfx:
             eff.setVolume(max(0.0, min(1.0, (self.sfx_pct / 100.0) * self.master_gain * 0.9)))
 
@@ -166,11 +182,12 @@ class AudioEngine(QObject):
         dt = TICK_MS
         duck_step = dt / max(1, self._duck_ms)
         if self.duck_current < self.duck_target:
-            self.duck_current = min(self.duck_target, self.duck_current + duck_step * 0.35)
+            self.duck_current = min(self.duck_target, self.duck_current + duck_step)
         elif self.duck_current > self.duck_target:
-            self.duck_current = max(self.duck_target, self.duck_current - duck_step * 0.35)
+            self.duck_current = max(self.duck_target, self.duck_current - duck_step)
         for d in self.decks:
             d.tick(dt)
+        self.voice.tick(dt)
         self._apply_outputs()
 
     def _emit_position(self) -> None:
@@ -235,7 +252,9 @@ class AudioEngine(QObject):
     @Slot(int)
     def stop_bgm(self, fade_ms: int = 700) -> None:
         for d in self.decks:
-            if d.playing:
+            # target > 0 also catches a deck that is still loading (play() was
+            # just called but playbackState has not reached PlayingState yet).
+            if d.playing or d.target > 0.001:
                 d.fade_to(0.0, fade_ms, stop_when_done=True)
         self.playingChanged.emit()
 
@@ -245,6 +264,11 @@ class AudioEngine(QObject):
             self.decks[self.active].player.pause()
         else:
             self.decks[self.active].player.play()
+        state = self.voice.player.playbackState()
+        if state == QMediaPlayer.PlayingState:
+            self.voice.player.pause()
+        elif state == QMediaPlayer.PausedState:
+            self.voice.player.play()
         self.playingChanged.emit()
 
     @Slot(int)
@@ -286,6 +310,41 @@ class AudioEngine(QObject):
         self.duck_enabled = bool(enabled)
         if not enabled:
             self.duck_target = 1.0
+
+    # ------------------------------------------------------------------ #
+    # Voice (spoken blessing at the wax seal)
+    # ------------------------------------------------------------------ #
+    def _voice_status(self, status: QMediaPlayer.MediaStatus) -> None:
+        if status in (QMediaPlayer.EndOfMedia, QMediaPlayer.InvalidMedia):
+            self._restore_voice_duck()
+            self.voiceChanged.emit()
+
+    def _restore_voice_duck(self) -> None:
+        if self._voice_ducked:
+            self._voice_ducked = False
+            self.set_ducked(False)
+
+    @Slot(str, int, bool, str)
+    def play_voice(self, path: str, volume_pct: int = 85, duck: bool = True, profile_dir: str = "") -> None:
+        target = self.resolve_bgm(path, Path(profile_dir) if profile_dir else None)
+        if target is None:
+            self.last_error = f"祝福语音不存在：{path}"
+            self.errorOccurred.emit(self.last_error)
+            return
+        self.voice.stop_now()
+        self._restore_voice_duck()
+        self.voice.play(target, False, max(0.0, min(1.0, volume_pct / 100.0)), 120)
+        self._voice_ducked = bool(duck)
+        if duck:
+            self.set_ducked(True)
+        self.voiceChanged.emit()
+
+    @Slot(int)
+    def stop_voice(self, fade_ms: int = 200) -> None:
+        if self.voice.playing or self.voice.gain > 0.001 or self.voice.target > 0.001:
+            self.voice.fade_to(0.0, fade_ms, stop_when_done=True)
+        self._restore_voice_duck()
+        self.voiceChanged.emit()
 
     # ------------------------------------------------------------------ #
     # SFX
@@ -334,5 +393,6 @@ class AudioEngine(QObject):
         self._position_timer.stop()
         for d in self.decks:
             d.player.stop()
+        self.voice.stop_now()
         for eff in self._sfx:
             eff.stop()

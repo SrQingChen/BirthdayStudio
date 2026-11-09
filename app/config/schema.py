@@ -80,11 +80,24 @@ class BgmConfig(StrictModel):
     fade_out_ms: int = Field(default=800, ge=0, le=3000)
 
 
+class VoiceConfig(StrictModel):
+    """Optional spoken blessing played when the wax seal breaks.
+
+    Empty ``path`` means "no voice" and must never raise a validation error.
+    The clip plays once (never loops) and the engine restores BGM ducking on
+    EndOfMedia; see ``AudioEngine.play_voice``.
+    """
+
+    path: str = ""
+    volume_pct: int = Field(default=85, ge=0, le=100)
+
+
 class AudioConfig(StrictModel):
     master_volume_pct: int = Field(default=50, ge=0, le=100)
     bgm: BgmConfig = Field(default_factory=BgmConfig)
     sfx_volume_pct: int = Field(default=60, ge=0, le=100)
     ducking_enabled: bool = True
+    voice: VoiceConfig = Field(default_factory=VoiceConfig)
 
 
 class MotionConfig(StrictModel):

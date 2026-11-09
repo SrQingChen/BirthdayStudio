@@ -12,6 +12,7 @@ Item {
     property real speedScale: 1.0
     signal actFinished()
     signal sfx(string kind)
+    signal voiceRequested()
 
     anchors.fill: parent
     focus: true
@@ -50,6 +51,8 @@ Item {
         onSealClicked: {
             root.opening = true
             root.sfx("wax")
+            // Fires at the crack (~240 ms after the tap), with the shards.
+            root.voiceRequested()
         }
         onOpened: root.revealLetter()
     }

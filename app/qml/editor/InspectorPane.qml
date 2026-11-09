@@ -36,6 +36,11 @@ Item {
     readonly property var colorStrategy: popupsCfg.color_strategy || ({})
     readonly property var paletteList: colorStrategy.palette || []
     readonly property string colorMode: colorStrategy.mode || "harmony"
+    readonly property var audioCfg: (draft && draft.global && draft.global.audio) ? draft.global.audio : ({})
+    readonly property var bgmCfg: audioCfg.bgm || ({})
+    readonly property var voiceCfg: audioCfg.voice || ({})
+    readonly property string bgmPath: bgmCfg.path || ""
+    readonly property string voicePath: voiceCfg.path || ""
 
     // "0" keeps every configured card; 1..N plays only the visible prefix.
     readonly property var cardLimitOptions: {
@@ -156,6 +161,7 @@ Item {
             Repeater {
                 model: [
                     { id: "form", label: "属性" },
+                    { id: "audio", label: "音频" },
                     { id: "json", label: "JSON" },
                     { id: "issues", label: "校验" }
                 ]
@@ -200,6 +206,8 @@ Item {
             anchors.rightMargin: 12
             anchors.verticalCenter: parent.verticalCenter
             spacing: 8
+            // Four tabs leave no room for the status at the 300 px minimum.
+            visible: root.width >= 340
             Text {
                 text: session.errorCount > 0 ? (session.errorCount + " 错误") : (session.warningCount > 0 ? (session.warningCount + " 警告") : "校验通过")
                 color: session.errorCount > 0 ? root.dangerColor : (session.warningCount > 0 ? "#ffd166" : "#7ee0d0")
@@ -261,6 +269,142 @@ Item {
                 sourceComponent: root.formComponent
             }
             Item { width: 1; height: 18 }
+        }
+    }
+
+    // audio tab — BGM and the blessing voice are uploaded from one place
+    Item {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: tabs.bottom
+        anchors.bottom: parent.bottom
+        visible: root.tab === "audio" || opacity > 0.01
+        enabled: root.tab === "audio"
+        opacity: root.tab === "audio" ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 130; easing.type: Easing.OutQuad } }
+
+        ScrollView {
+            id: audioScroll
+            anchors.fill: parent
+            clip: true
+            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+
+            Column {
+                width: audioScroll.availableWidth - 28
+                x: 14
+                y: 4
+                spacing: 12
+
+                Section {
+                    title: "背景音乐 BGM"
+                    subtitle: "全流程循环 · 淡入"
+
+                    InspectorField {
+                        label: "音乐文件"
+                        path: "global.audio.bgm.path"
+                        type: "path"
+                        assetKind: "audio"
+                        browseText: "上传"
+                    }
+                    Row {
+                        width: parent.width
+                        spacing: 8
+                        EdButton {
+                            text: "试听"
+                            small: true
+                            enabled: root.bgmPath !== ""
+                            onClicked: showBridge.playBgm(
+                                           root.bgmPath, false,
+                                           root.bgmCfg.volume_pct !== undefined ? root.bgmCfg.volume_pct : 50,
+                                           400)
+                        }
+                        EdButton {
+                            text: "停止"
+                            small: true
+                            enabled: root.bgmPath !== ""
+                            onClicked: showBridge.stopBgm(300)
+                        }
+                    }
+                    Text {
+                        width: parent.width
+                        text: "试听只播一遍；正式演出按下方「循环」开关播放。"
+                        color: root.muted
+                        font.family: theme.hanFamily
+                        font.pixelSize: 10
+                        wrapMode: Text.Wrap
+                        opacity: 0.7
+                    }
+                    InspectorField { label: "BGM 音量"; path: "global.audio.bgm.volume_pct"; type: "slider"; min: 0; max: 100; step: 1; unit: "%" }
+                    InspectorField { label: "循环"; path: "global.audio.bgm.loop"; type: "switch" }
+                    InspectorField { label: "淡入"; path: "global.audio.bgm.fade_in_ms"; type: "number"; min: 0; max: 3000; unit: "ms" }
+                    InspectorField { label: "淡出"; path: "global.audio.bgm.fade_out_ms"; type: "number"; min: 0; max: 3000; unit: "ms" }
+                }
+
+                Section {
+                    title: "祝福语音"
+                    subtitle: "火漆碎裂时播放一次"
+
+                    InspectorField {
+                        label: "语音文件"
+                        path: "global.audio.voice.path"
+                        type: "path"
+                        assetKind: "audio"
+                        browseText: "上传"
+                    }
+                    Row {
+                        width: parent.width
+                        spacing: 8
+                        EdButton {
+                            text: "试听语音"
+                            small: true
+                            enabled: root.voicePath !== ""
+                            onClicked: {
+                                showBridge.setDucking(root.audioCfg.ducking_enabled !== false)
+                                showBridge.playVoice(
+                                    root.voicePath,
+                                    root.voiceCfg.volume_pct !== undefined ? root.voiceCfg.volume_pct : 85,
+                                    true)
+                            }
+                        }
+                        EdButton {
+                            text: "停止"
+                            small: true
+                            enabled: root.voicePath !== ""
+                            onClicked: showBridge.stopVoice()
+                        }
+                    }
+                    Text {
+                        width: parent.width
+                        text: "语音不循环；播放期间 BGM 自动压低约 10.5 dB，语音结束后自动恢复。留空则不播放。"
+                        color: root.muted
+                        font.family: theme.hanFamily
+                        font.pixelSize: 10
+                        wrapMode: Text.Wrap
+                        opacity: 0.75
+                    }
+                    InspectorField { label: "语音音量"; path: "global.audio.voice.volume_pct"; type: "slider"; min: 0; max: 100; step: 1; unit: "%" }
+                }
+
+                Section {
+                    title: "音量与音效"
+                    subtitle: "主音量、音效与 Ducking 总开关"
+
+                    InspectorField { label: "主音量"; path: "global.audio.master_volume_pct"; type: "slider"; min: 0; max: 100; step: 1; unit: "%" }
+                    InspectorField { label: "音效音量"; path: "global.audio.sfx_volume_pct"; type: "slider"; min: 0; max: 100; step: 1; unit: "%" }
+                    InspectorField { label: "Ducking"; path: "global.audio.ducking_enabled"; type: "switch"; hint: "关闭后语音播放时 BGM 保持原音量" }
+                }
+
+                Text {
+                    width: parent.width
+                    text: "安全聆听：主音量与 BGM 音量默认 50%，高于 50% 会在校验页给出警告。"
+                    color: root.muted
+                    font.family: theme.hanFamily
+                    font.pixelSize: 10
+                    wrapMode: Text.Wrap
+                    opacity: 0.65
+                }
+                Item { width: 1; height: 18 }
+            }
         }
     }
 
@@ -562,17 +706,14 @@ Item {
                 InspectorField { label: "环境亮度"; path: "global.environment.ambient_brightness"; type: "slider"; min: 0.4; max: 1.2; step: 0.05 }
             }
 
-            Section {
-                title: "声音"
-                subtitle: "背景音乐与音效"
-                InspectorField { label: "主音量"; path: "global.audio.master_volume_pct"; type: "slider"; min: 0; max: 100; step: 1; unit: "%" }
-                InspectorField { label: "BGM"; path: "global.audio.bgm.path"; type: "path"; assetKind: "audio" }
-                InspectorField { label: "BGM 音量"; path: "global.audio.bgm.volume_pct"; type: "slider"; min: 0; max: 100; step: 1; unit: "%" }
-                InspectorField { label: "循环"; path: "global.audio.bgm.loop"; type: "switch" }
-                InspectorField { label: "淡入"; path: "global.audio.bgm.fade_in_ms"; type: "number"; min: 0; max: 3000; unit: "ms" }
-                InspectorField { label: "淡出"; path: "global.audio.bgm.fade_out_ms"; type: "number"; min: 0; max: 3000; unit: "ms" }
-                InspectorField { label: "音效音量"; path: "global.audio.sfx_volume_pct"; type: "slider"; min: 0; max: 100; step: 1; unit: "%" }
-                InspectorField { label: "Ducking"; path: "global.audio.ducking_enabled"; type: "switch"; hint: "人声/朗读出现时自动压低音乐" }
+            Text {
+                width: parent.width
+                text: "BGM、祝福语音与音量设置已移至顶部「音频」页签。"
+                color: root.muted
+                font.family: theme.hanFamily
+                font.pixelSize: 10
+                wrapMode: Text.Wrap
+                opacity: 0.7
             }
 
             Section {

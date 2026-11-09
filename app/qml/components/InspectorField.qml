@@ -15,6 +15,7 @@ Column {
     property real step: 1
     property string unit: ""
     property string assetKind: ""
+    property string browseText: "浏览"
     property string hint: ""
     // Combo values arrive as strings; use "int" when the schema field is an
     // integer (e.g. cards_limit) so the draft stays JSON-typed.
@@ -221,7 +222,7 @@ Column {
                 EdButton {
                     width: 60
                     height: 32
-                    text: "浏览"
+                    text: root.browseText
                     small: true
                     anchors.verticalCenter: parent.verticalCenter
                     onClicked: filePicker.open()

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "birthday-studio"
-version = "1.0.0"
+version = "1.1.2"
 description = "配置驱动的交互式生贺演出终端：七幕仪式演出引擎 + 可视化配置编辑器"
 readme = "README.md"
 requires-python = ">=3.10"

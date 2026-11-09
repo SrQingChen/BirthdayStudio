@@ -24,7 +24,7 @@ from .session_bridge import SessionBridge
 from .show_bridge import ShowBridge
 from .theme_bridge import ThemeBridge
 
-APP_VERSION = "1.1.1"
+APP_VERSION = "1.1.2"
 
 
 class AppBridge(QObject):
