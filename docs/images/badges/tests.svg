@@ -17,5 +17,5 @@
   </g>
   <circle cx="17" cy="18.0" r="3" fill="#7ee0d0"/>
   <text x="28" y="23" font-family="Segoe UI, Noto Sans SC, sans-serif" font-size="9" letter-spacing="1.4" fill="#7ee0d0" fill-opacity="0.9">TESTS</text>
-  <text x="76.0" y="23.6" font-family="Segoe UI, Noto Sans SC, sans-serif" font-size="12.5" font-weight="600" fill="#fff8ee">20 / 20 passing</text>
+  <text x="76.0" y="23.6" font-family="Segoe UI, Noto Sans SC, sans-serif" font-size="12.5" font-weight="600" fill="#fff8ee">21 / 21 passing</text>
 </svg>

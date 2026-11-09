@@ -7,6 +7,7 @@ import os
 import shutil
 import tempfile
 import unittest
+import unittest.mock as mock
 from pathlib import Path
 
 HOME = tempfile.mkdtemp(prefix="birthday-studio-tests-")
@@ -302,6 +303,33 @@ class ExporterTests(unittest.TestCase):
         self.assertTrue((package / "LICENSES" / "SOURCE.txt").exists())
         self.assertTrue((package / "启动演出.bat").exists())
         self.assertTrue(Path(result["zipPath"]).exists())
+
+    def test_gift_export_uses_ascii_player_and_launcher(self):
+        store = ProfileStore()
+        profile = store.create(theme_id="glass-celebration", honoree="砚子", name="礼物导出")
+        pm = PluginManager([])
+        pm.scan()
+        exporter = Exporter(store, pm)
+        fake_player = Path(HOME) / "fake-player.exe"
+        fake_player.write_bytes(b"MZ")
+        with mock.patch.object(Exporter, "find_player", return_value=fake_player):
+            result = exporter.export(
+                profile,
+                Path(HOME) / "export_gift",
+                ExportOptions(exe_name="给砚子的生日礼物", copyright_confirmed=True),
+            )
+        self.assertTrue(result["ok"])
+        package = Path(result["packageDir"])
+        # The gift name is the folder; the executable and launcher stay ASCII
+        # so cmd's code page cannot corrupt the path.
+        self.assertEqual(package.name, "给砚子的生日礼物")
+        self.assertTrue((package / "BirthdayStudioPlayer.exe").exists())
+        self.assertFalse((package / "给砚子的生日礼物.exe").exists())
+        bat = (package / "启动演出.bat").read_bytes()
+        self.assertLessEqual(max(bat), 127)
+        self.assertIn(b'BirthdayStudioPlayer.exe', bat)
+        self.assertIn(b'--play "profile"', bat)
+        self.assertNotIn(b"\r\r\n", bat)
 
     def test_voice_asset_is_packaged(self):
         store = ProfileStore()

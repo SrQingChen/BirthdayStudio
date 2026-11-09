@@ -100,8 +100,12 @@ class Exporter:
         atomic_write_json(profile_dst / "profile.json", raw)
 
         # ---- player binary ------------------------------------------------
+        # Keep the executable name ASCII even when the gift folder is Chinese:
+        # cmd's batch parser is code-page sensitive, and a UTF-8 Chinese exe
+        # name inside 启动演出.bat made the launcher flash and exit on some
+        # Windows configurations.
         player = self.find_player()
-        exe_name = f"{stem}.exe"
+        exe_name = "BirthdayStudioPlayer.exe"
         used_prebuilt = False
         if player is not None:
             shutil.copy2(player, package / exe_name)
@@ -116,12 +120,26 @@ class Exporter:
 
         # ---- launcher -----------------------------------------------------
         if used_prebuilt:
+            # Pure ASCII + relative paths: the launcher works from Chinese,
+            # spaced and long paths without depending on the console code page.
             bat = (
                 "@echo off\r\n"
-                "chcp 65001 >nul\r\n"
-                f'start "" "%~dp0{exe_name}" --play "%~dp0profile"\r\n'
+                'cd /d "%~dp0"\r\n'
+                'if not exist "BirthdayStudioPlayer.exe" (\r\n'
+                "    echo [ERROR] BirthdayStudioPlayer.exe not found.\r\n"
+                "    echo Please extract the whole gift package again.\r\n"
+                "    pause\r\n"
+                "    exit /b 1\r\n"
+                ")\r\n"
+                'if not exist "profile\\profile.json" (\r\n'
+                "    echo [ERROR] profile\\profile.json not found.\r\n"
+                "    echo Please extract the whole gift package again.\r\n"
+                "    pause\r\n"
+                "    exit /b 1\r\n"
+                ")\r\n"
+                'start "" "BirthdayStudioPlayer.exe" --play "profile"\r\n'
             )
-            readme_note = "双击 启动演出.bat 即可开始。"
+            readme_note = "双击 BirthdayStudioPlayer.exe 或 启动演出.bat 即可开始。"
             if options.form == "single":
                 readme_note += "\n（单文件专用构建未启用，已按「播放器 + 配置包」形态导出。）"
         else:
@@ -130,8 +148,8 @@ class Exporter:
             bat = (
                 "@echo off\r\n"
                 "chcp 65001 >nul\r\n"
-                "rem 开发模式启动器：目标机器需要 Python 3.10+ 与依赖。\r\n"
-                "rem 正式分发请先运行 scripts/build_player.bat 生成 dist/BirthdayStudioPlayer.exe。\r\n"
+                "rem Development launcher: Python 3.10+ and dependencies required.\r\n"
+                "rem Build dist/BirthdayStudioPlayer.exe for a standalone distribution.\r\n"
                 f'pushd "{proj}"\r\n'
                 f'"{py}" -m app --play "%~dp0profile"\r\n'
                 "popd\r\n"
@@ -141,7 +159,9 @@ class Exporter:
                 "当前包未检测到预编译播放器，使用开发模式启动器（需要 Python 环境）。\n"
                 "正式分发前请运行 scripts/build_player.bat 生成 dist/BirthdayStudioPlayer.exe。"
             )
-        (package / "启动演出.bat").write_text(bat, encoding="utf-8")
+        # write_bytes avoids Windows text-mode newline translation (which
+        # turned the intended CRLF into CR CR LF).
+        (package / "启动演出.bat").write_bytes(bat.encode("ascii" if used_prebuilt else "utf-8"))
 
         (package / "README.txt").write_text(
             "生贺演出\n"

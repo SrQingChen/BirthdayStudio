@@ -68,8 +68,19 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    # A gift package puts the player next to a "profile/" folder. Double-
+    # clicking the exe should start the show, not open the editor. Only the
+    # frozen build does this; `python -m app` keeps its editor default.
+    auto_play = ""
+    if not args.play and getattr(sys, "frozen", False):
+        sibling = Path(sys.executable).resolve().parent / "profile" / "profile.json"
+        if sibling.is_file():
+            auto_play = str(sibling.parent)
+            args.play = auto_play
     _setup_logging()
     log = logging.getLogger("birthday-studio")
+    if auto_play:
+        log.info("auto-play from sibling profile: %s", auto_play)
 
     QGuiApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough

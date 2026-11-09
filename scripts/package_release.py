@@ -106,13 +106,31 @@ USAGE_TXT = """BirthdayStudio {version} · 生贺演出终端
 """
 
 LAUNCH_SHOW_BAT = """@echo off
-chcp 65001 >nul
-start "" "%~dp0BirthdayStudioPlayer.exe" --play "%~dp0demo-profile"
+cd /d "%~dp0"
+if not exist "BirthdayStudioPlayer.exe" (
+    echo [ERROR] BirthdayStudioPlayer.exe not found.
+    echo Please extract the whole package again.
+    pause
+    exit /b 1
+)
+if not exist "demo-profile\\profile.json" (
+    echo [ERROR] demo-profile\\profile.json not found.
+    echo Please extract the whole package again.
+    pause
+    exit /b 1
+)
+start "" "BirthdayStudioPlayer.exe" --play "demo-profile"
 """
 
 OPEN_EDITOR_BAT = """@echo off
-chcp 65001 >nul
-start "" "%~dp0BirthdayStudioPlayer.exe"
+cd /d "%~dp0"
+if not exist "BirthdayStudioPlayer.exe" (
+    echo [ERROR] BirthdayStudioPlayer.exe not found.
+    echo Please extract the whole package again.
+    pause
+    exit /b 1
+)
+start "" "BirthdayStudioPlayer.exe"
 """
 
 

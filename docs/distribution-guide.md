@@ -55,14 +55,15 @@ scripts\build_player.bat
 
 1. 新建 Windows 10/11 虚拟机（无 Python、无 PySide6、无环境变量）。
 2. 解压导出包或复制 `dist\BirthdayStudioPlayer.exe` + `profile/`。
-3. 双击 `启动演出.bat`（或 `Player.exe --play profile`）。
+3. 双击 `启动演出.bat`，或直接双击 `BirthdayStudioPlayer.exe`（同目录有 `profile/` 时自动进入播放器）。
 4. 检查：音乐、七幕、3D 蛋糕、吹蜡烛、终幕彩带、跳过、静音/暂停、Esc 退出。
 5. 本机已用空 `BIRTHDAY_STUDIO_HOME` 验证 onefile 启动、信封与蛋糕截图；仍建议在真机 VM 复测。
 
 ## 4. 个性化（X-03）
 
-- 导出向导可设置文件名（默认「给 XX 的生日礼物」）。
-- 图标与版本信息需要在构建时写入 exe（PyInstaller `--icon`、Nuitka `--windows-icon-from-ico`）；当前导出只改文件名。
+- 导出向导设置的是**文件夹 / zip 名称**（默认「给 XX 的生日礼物」）；文件夹内的播放器固定为 ASCII 名 `BirthdayStudioPlayer.exe`，`启动演出.bat` 也只含 ASCII，避免中文 exe 名在某些 cmd 代码页下解析失败。
+- 礼物包内双击 `BirthdayStudioPlayer.exe`（同目录有 `profile/`）会自动以播放器模式开始演出；分发包内没有 `profile/`，双击仍进入编辑器。
+- 图标与版本信息需要在构建时写入 exe（PyInstaller `--icon`、Nuitka `--windows-icon-from-ico`）；当前导出只改文件夹名。
 - 单文件 exe 的图标/版本需在专用构建脚本中配置。
 
 ## 5. GPL 合规（X-06）
